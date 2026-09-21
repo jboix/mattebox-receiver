@@ -1,0 +1,1 @@
+import{o as e}from"./index-Byts94P9.js";var t=e(`kernel`,()=>[]);export{t as default};

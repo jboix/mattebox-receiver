@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mattebox Cast receiver</title>
+  <link rel="icon" type="image/svg+xml" />
+  <!-- Google's receiver framework, version 3. Always from gstatic, never a dependency. -->
+  <script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+  <script type="module" crossorigin src="/mattebox-receiver/assets/index-Byts94P9.js"></script>
+  <link rel="stylesheet" crossorigin href="/mattebox-receiver/assets/index-BKt2ZDqs.css">
+</head>
+<body>
+  <!-- The reference integration. No buttons: nothing on the device is clickable. -->
+  <mattebox-player controls="custom" muted>
+    <mbx-title></mbx-title>
+    <mbx-spinner></mbx-spinner>
+    <mbx-control-bar>
+      <mbx-current-time></mbx-current-time>
+      <mbx-seek-bar></mbx-seek-bar>
+      <mbx-duration></mbx-duration>
+      <mbx-live-button></mbx-live-button>
+    </mbx-control-bar>
+  </mattebox-player>
+</body>
+</html>
