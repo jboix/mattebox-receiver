@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+    steps:
+      - name: Mint the release bot token
+        id: bot-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          token: ${{ steps.bot-token.outputs.token }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Update npm (trusted publishing needs npm 11.5.1 or later)
+        run: npm install -g npm@^11.5.1
+
+      - name: Install dependencies
+        env:
+          HUSKY: '0'
+        run: npm ci
+
+      - name: Install browsers
+        uses: ./.github/actions/playwright-browsers
+
+      - name: Verify the gates one last time
+        run: npm run verify
+
+      # semantic-release and its plugins are root dev dependencies, so the release
+      # runs the exact versions in package-lock.json, installed above with
+      # npm ci, rather than whatever the registry serves at run time. One run
+      # per package, and there is one package.
+      - name: Semantic Release per package (version commit + tag + Release + npm via OIDC)
+        env:
+          GITHUB_TOKEN: ${{ steps.bot-token.outputs.token }}
+        run: npm run release:ci --workspaces

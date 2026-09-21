@@ -1,0 +1,39 @@
+name: GitHub Page
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: github-page
+  cancel-in-progress: false
+
+jobs:
+  github-page:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - name: Install dependencies
+        env:
+          HUSKY: '0'
+        run: npm ci
+      - name: Build the app
+        run: npm run app:build -- --base=/${{ github.event.repository.name }}/
+      - name: Deploy GitHub Page 🚀
+        uses: JamesIves/github-pages-deploy-action@fa24774553152dd7873cd16ebd8d959b010c5445 # releases/v4
+        with:
+          branch: gh-pages
+          folder: app/dist
+          force: false
+          clean-exclude: pr-preview/
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

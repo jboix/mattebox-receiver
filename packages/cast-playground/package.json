@@ -1,0 +1,52 @@
+{
+  "name": "@mattebox/cast-playground",
+  "version": "0.0.0",
+  "description": "A Cast receiver page under Google's real receiver framework in a desktop browser, with the device's platform and a sender played by the page around it. No device, no registration.",
+  "author": "Josep Boix Requesens",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jboix/mattebox-receiver.git",
+    "directory": "packages/cast-playground"
+  },
+  "homepage": "https://github.com/jboix/mattebox-receiver/tree/main/packages/cast-playground#readme",
+  "bugs": {
+    "url": "https://github.com/jboix/mattebox-receiver/issues"
+  },
+  "keywords": [
+    "mattebox",
+    "chromecast",
+    "cast",
+    "receiver",
+    "caf",
+    "playground",
+    "sender",
+    "cli"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "bin": {
+    "cast-playground": "./dist/node/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/node/server.d.ts",
+      "default": "./dist/node/server.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "platform.js"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run clean && npm run build:node && npm run build:ui",
+    "build:node": "tsc -p tsconfig.build.json",
+    "build:ui": "vite build --config vite.config.ts",
+    "check:package": "publint",
+    "release:ci": "semantic-release"
+  }
+}

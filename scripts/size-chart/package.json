@@ -1,0 +1,7 @@
+{
+  "name": "size-chart",
+  "private": true,
+  "dependencies": {
+    "shaka-player": "4.15.61"
+  }
+}

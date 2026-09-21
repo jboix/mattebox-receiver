@@ -1,0 +1,56 @@
+{
+  "name": "@mattebox/cast-receiver",
+  "version": "0.0.0",
+  "description": "The bridge between Google's Cast receiver framework and <mattebox-player>, with hooks. No DOM of its own.",
+  "author": "Josep Boix Requesens",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jboix/mattebox-receiver.git",
+    "directory": "packages/cast-receiver"
+  },
+  "homepage": "https://github.com/jboix/mattebox-receiver#readme",
+  "bugs": {
+    "url": "https://github.com/jboix/mattebox-receiver/issues"
+  },
+  "keywords": [
+    "mattebox",
+    "player",
+    "chromecast",
+    "cast",
+    "receiver",
+    "caf",
+    "video"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.19"
+  },
+  "main": "./dist/es2015/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "modern": "./dist/index.js",
+      "default": "./dist/es2015/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run clean && npm run build:modern && npm run build:es2015",
+    "build:modern": "tsc -p tsconfig.build.json",
+    "build:es2015": "rolldown -c rolldown.dist.config.mjs",
+    "check:package": "publint && attw --pack . --format table --no-emoji",
+    "release:ci": "semantic-release"
+  },
+  "peerDependencies": {
+    "@mattebox/player": ">=0.5.0",
+    "@mattebox/player-core": "^0.3.0",
+    "mattebox": "^0.6.0"
+  }
+}

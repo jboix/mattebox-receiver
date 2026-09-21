@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mattebox receiver playground</title>
+  <link rel="icon" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+  />
+  <script>
+    // Before the first paint, so the page never flashes the other theme.
+    try {
+      const theme = localStorage.getItem('mattebox.receiver.theme');
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch {}
+  </script>
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <header class="masthead">
+    <img class="logo" alt="" />
+    <h1>Mattebox receiver</h1>
+    <button type="button" id="open-content" class="chooser">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12.8 12.8L17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>Load content</span>
+    </button>
+    <button type="button" id="theme-toggle" class="theme-toggle"></button>
+  </header>
+
+  <dialog id="content-dialog" aria-labelledby="content-title">
+    <div class="flag-head">
+      <h2 id="content-title">Content</h2>
+      <div class="segments" role="tablist" aria-label="Content source">
+        <button type="button" role="tab" data-route="static" aria-selected="true">Static</button>
+        <button type="button" role="tab" data-route="srgssr" aria-selected="false">SRG SSR</button>
+      </div>
+      <button type="button" id="close-content" aria-label="Close">✕</button>
+    </div>
+
+    <div id="route-static" role="tabpanel">
+      <ol id="streams" class="picks" aria-label="Demo streams"></ol>
+      <form id="custom">
+        <div class="row">
+          <input id="url" class="grow" required placeholder="https://…/master.m3u8  or  manifest.mpd  or  a URN" aria-label="Content URL" />
+          <button type="submit">Load</button>
+        </div>
+        <div class="row">
+          <input id="license" class="grow" placeholder="DRM license URL (for encrypted streams)" aria-label="License URL" />
+          <input id="title" class="grow" placeholder="Title (from the URL when empty)" aria-label="Title" />
+        </div>
+        <div class="row">
+          <input id="vtt" class="grow" placeholder="The sender's subtitles, a WebVTT URL (optional)" aria-label="Subtitles URL" />
+          <input id="vtt-lang" value="en" size="3" aria-label="Subtitles language" />
+          <select id="type" aria-label="Content type">
+            <option value="">Type from the URL</option>
+            <option value="application/vnd.apple.mpegurl">HLS</option>
+            <option value="application/dash+xml">DASH</option>
+            <option value="video/mp4">MP4</option>
+            <option value="audio/mpeg">MP3</option>
+          </select>
+          <label class="check"><input type="checkbox" id="live" /><span>Live</span></label>
+          <label class="check" title="customData.srgssr: the receiver fetches its own Akamai token"><input type="checkbox" id="token" /><span>SRG SSR token</span></label>
+        </div>
+        <div class="row">
+          <input id="custom-data" class="grow" placeholder='customData, as JSON: {"token": "…"}' aria-label="customData, as JSON" />
+        </div>
+        <p id="custom-state" class="hint" aria-live="polite">Merged into the load's customData, for a receiver with conventions of its own.</p>
+      </form>
+    </div>
+
+    <div id="route-srgssr" role="tabpanel" hidden>
+      <form id="search" class="row">
+        <select id="search-bu" aria-label="Business unit"></select>
+        <input id="search-query" class="grow" type="search" placeholder="Search a title, or paste a URN" autocomplete="off" />
+        <button type="submit">Search</button>
+      </form>
+      <p id="search-state" class="hint" aria-live="polite">Pick a media, then the resource to send. The receiver gets a URL, never the URN.</p>
+      <ol id="search-results" class="picks tall" hidden></ol>
+      <div id="composition" hidden></div>
+    </div>
+  </dialog>
+
+  <main class="rig">
+    <div class="frame">
+      <section aria-label="The receiver's screen">
+        <div class="screen" id="screen">
+          <iframe id="receiver" title="The receiver's screen" allow="autoplay; encrypted-media"></iframe>
+        </div>
+        <p class="status"><span class="state" id="state" data-state="OFF">starting</span> <span id="session"></span></p>
+      </section>
+      <section class="flag flag-bottom" aria-labelledby="messages-title">
+        <div class="flag-head">
+          <h2 id="messages-title">Messages</h2>
+          <button type="button" id="clear">Clear</button>
+        </div>
+        <ol id="log"></ol>
+      </section>
+    </div>
+
+    <aside class="flag flag-right" aria-labelledby="sender-title">
+      <div class="flag-head">
+        <h2 id="sender-title">The sender</h2>
+        <button type="button" id="reload" title="A new receiver context, and no media session">Restart receiver</button>
+      </div>
+
+      <fieldset class="group">
+        <legend>Load</legend>
+        <div class="checks">
+          <label class="check"><input type="checkbox" id="autoplay" checked /><span>Autoplay</span></label>
+          <label class="check"><input type="checkbox" id="start-on" /><span>Start at</span></label>
+          <input id="start" type="number" min="0" value="0" aria-label="Start at, in seconds" />
+          <span class="muted">s</span>
+        </div>
+        <p class="hint">Without a start time the LOAD names none, and the receiver decides: zero, or the live edge.</p>
+      </fieldset>
+
+      <fieldset class="group" id="transport">
+        <legend>Transport</legend>
+        <div class="row">
+          <button type="button" data-command="PLAY">Play</button>
+          <button type="button" data-command="PAUSE">Pause</button>
+          <button type="button" data-command="STOP">Stop</button>
+          <button type="button" id="to-live" hidden>Go live</button>
+          <span class="grow"></span>
+          <select id="rate" aria-label="Playback rate">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.5">1.5×</option>
+            <option value="2">2×</option>
+          </select>
+        </div>
+        <div class="row seek">
+          <output id="time">0:00</output>
+          <input id="seek" class="grow" type="range" min="0" max="0" step="0.1" value="0" aria-label="Seek" />
+          <output id="duration">0:00</output>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>Tracks</legend>
+        <div class="pair">
+          <div id="audio" class="tracks"><h3>Audio</h3></div>
+          <div id="text" class="tracks"><h3>Text</h3></div>
+        </div>
+      </fieldset>
+
+      <fieldset class="group">
+        <legend>Receiver</legend>
+        <p class="hint" id="target"></p>
+        <div class="row">
+          <input id="page-query" class="grow" placeholder="Query for the page, such as debug" aria-label="Query for the receiver page" />
+        </div>
+        <p class="hint">Added to the receiver page's URL. A change restarts the receiver.</p>
+      </fieldset>
+    </aside>
+  </main>
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
