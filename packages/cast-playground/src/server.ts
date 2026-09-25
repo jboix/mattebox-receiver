@@ -18,7 +18,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import { createServer, request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
-import { connect as netConnect } from 'node:net';
+import { isIP, connect as netConnect } from 'node:net';
 import { networkInterfaces } from 'node:os';
 import { extname, join, normalize, sep } from 'node:path';
 import type { Duplex } from 'node:stream';
@@ -144,16 +144,29 @@ function receiverServer(
   self: (req: IncomingMessage) => string,
 ): Server {
   const secure = upstream.protocol === 'https:';
+  // An IPv6 literal without its brackets: `http.request` and `net.connect` take the bare address.
+  const hostname = upstream.hostname.replace(/^\[(.*)\]$/, '$1');
 
   function forward(req: IncomingMessage, res: ServerResponse): void {
     if (req.url?.split('?')[0] === PLATFORM_PATH) {
       sendFile(res, PLATFORM);
       return;
     }
+    // A request line can name another host (`//host/`, `http://host/`, `/\host/`), and
+    // resolving it against the upstream would follow it. The proxy is the receiver's origin only.
+    const wanted = new URL(req.url ?? '/', upstream);
+    if (wanted.origin !== upstream.origin) {
+      res.writeHead(400, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end('The playground forwards requests to the receiver page only.');
+      return;
+    }
     const send = secure ? httpsRequest : httpRequest;
     const out = send(
-      new URL(req.url ?? '/', upstream),
       {
+        protocol: upstream.protocol,
+        hostname,
+        port: upstream.port,
+        path: `${wanted.pathname}${wanted.search}`,
         method: req.method,
         // Uncompressed, so a document can be read. The host is the receiver's, which is what its server routes by.
         headers: { ...req.headers, host: upstream.host, 'accept-encoding': 'identity' },
@@ -192,8 +205,9 @@ function receiverServer(
   server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     const port = Number(upstream.port) || (secure ? 443 : 80);
     const there = secure
-      ? tlsConnect({ host: upstream.hostname, port, servername: upstream.hostname })
-      : netConnect({ host: upstream.hostname, port });
+      ? // TLS sends a name, never an address, as the server name.
+        tlsConnect({ host: hostname, port, ...(isIP(hostname) === 0 && { servername: hostname }) })
+      : netConnect({ host: hostname, port });
     there.on('error', () => socket.destroy());
     socket.on('error', () => there.destroy());
     const lines = [`${req.method} ${req.url} HTTP/1.1`];

@@ -48,8 +48,10 @@ describe('the playground', () => {
           'content-type': 'text/html; charset=utf-8',
           'content-security-policy': "default-src 'self'",
           'x-frame-options': 'DENY',
+          // The path and query it was asked for, out of the document, so the fixture reflects nothing into HTML.
+          'x-asked': req.url ?? '',
         });
-        res.end(`<html><head><script src="/app.js"></script></head><body>${req.url}</body></html>`);
+        res.end('<html><head><script src="/app.js"></script></head><body></body></html>');
       }
     });
     upstream = server;
@@ -74,7 +76,7 @@ describe('the playground', () => {
     const html = await response.text();
     expect(html).toContain(`data-parent="${new URL(playground.url).origin}"`);
     expect(html.indexOf(PLATFORM_PATH)).toBeLessThan(html.indexOf('/app.js'));
-    expect(html).toContain('/receiver/?a=1');
+    expect(response.headers.get('x-asked')).toBe('/receiver/?a=1');
     expect(response.headers.get('content-security-policy')).toBeNull();
     expect(response.headers.get('x-frame-options')).toBeNull();
   });
@@ -138,6 +140,66 @@ describe('the playground', () => {
     const origin = await receiver();
     playground = await startPlayground({ receiver: `${origin}/`, port: 0 });
     expect(playground.networkUrls).toEqual([]);
+  });
+
+  it("sends nothing outside the receiver's origin", async () => {
+    const origin = await receiver();
+    let reached = 0;
+    const elsewhere = createServer((_req, res) => {
+      reached += 1;
+      res.end('elsewhere');
+    });
+    await new Promise<void>((resolve) => elsewhere.listen(0, 'localhost', resolve));
+    const other = `localhost:${(elsewhere.address() as AddressInfo).port}`;
+    playground = await startPlayground({ receiver: `${origin}/`, port: 0 });
+    const proxyPort = new URL(playground.receiverUrl).port;
+    // A request line can name another host: scheme-relative, absolute, or with a backslash.
+    const ask = (path: string): Promise<number> =>
+      new Promise((resolve, reject) => {
+        request({ host: 'localhost', port: proxyPort, path }, (res) => {
+          res.resume();
+          resolve(res.statusCode ?? 0);
+        })
+          .on('error', reject)
+          .end();
+      });
+    try {
+      for (const path of [`//${other}/`, `http://${other}/`, `/\\${other}/`]) {
+        expect(await ask(path)).toBe(400);
+      }
+      expect(reached).toBe(0);
+    } finally {
+      await new Promise((resolve) => elsewhere.close(resolve));
+    }
+  });
+
+  it('passes a WebSocket upgrade through to a receiver page on an IPv6 address', async () => {
+    const server = createServer();
+    server.on('upgrade', (req, socket) => {
+      socket.end(
+        `HTTP/1.1 101 Switching Protocols\r\nupgrade: test\r\nconnection: Upgrade\r\nx-asked: ${req.url}\r\n\r\n`,
+      );
+    });
+    upstream = server;
+    await new Promise<void>((resolve) => server.listen(0, '::1', resolve));
+    const origin = `http://[::1]:${(server.address() as AddressInfo).port}`;
+    playground = await startPlayground({ receiver: `${origin}/`, port: 0 });
+    const proxyPort = new URL(playground.receiverUrl).port;
+    const asked = await new Promise<string | undefined>((resolve, reject) => {
+      request({
+        host: 'localhost',
+        port: proxyPort,
+        path: '/hmr',
+        headers: { connection: 'Upgrade', upgrade: 'test' },
+      })
+        .on('upgrade', (res, socket) => {
+          socket.destroy();
+          resolve(res.headers['x-asked'] as string | undefined);
+        })
+        .on('error', reject)
+        .end();
+    });
+    expect(asked).toBe('/hmr');
   });
 
   it('says so when the receiver page does not answer', async () => {
