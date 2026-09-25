@@ -1,6 +1,6 @@
 {
   "name": "@mattebox/cast-playground",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A Cast receiver page under Google's real receiver framework in a desktop browser, with the device's platform and a sender played by the page around it. No device, no registration.",
   "author": "Josep Boix Requesens",
   "repository": {
