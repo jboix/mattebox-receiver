@@ -133,6 +133,7 @@ ids with these rules:
 - The sender's own text tracks keep the ids that the sender gave them.
 - The engine's audio and text tracks take the next free numbers. In a native session, the video's text tracks take them instead.
 - The library assigns an id once per load and never changes it. An `EDIT_TRACKS_INFO` message therefore always names a track that still exists.
+- The library leaves out forced subtitle tracks. The engine shows them by itself while no subtitle is selected.
 
 When a sender sends `EDIT_TRACKS_INFO`, the library selects the engine's
 tracks through `engine.tracks`.

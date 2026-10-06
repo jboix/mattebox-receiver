@@ -18,6 +18,8 @@ export interface EngineTrackView {
   readonly mimeType: string;
   readonly lang?: string;
   readonly role?: string;
+  /** A forced-subtitle track. mattebox 0.9 sets it; earlier releases never do. */
+  readonly forced?: boolean;
 }
 
 /** One of the video's own text tracks, by position in `video.textTracks`. */
@@ -105,6 +107,11 @@ export function createTrackIds(sender: readonly CastLoadTrack[]): TrackIds {
     }
     for (const track of engine ?? []) {
       if (track.contentType !== 'audio' && track.contentType !== 'text') continue;
+      // The engine shows a forced track by itself while no subtitle is
+      // selected, so a sender never picks it. The player's subtitles menu
+      // leaves it out for the same reason. Unlisted, it is never reported
+      // active, and the sender reads subtitles as off while it shows.
+      if (track.forced === true) continue;
       const target: TrackTarget = {
         origin: 'engine',
         contentType: track.contentType,

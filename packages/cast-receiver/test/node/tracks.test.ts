@@ -112,6 +112,23 @@ describe('createTrackIds', () => {
     expect(ids.byLanguage('fr')).toBeNull();
   });
 
+  it('leaves out a forced subtitle track, which no sender selects', () => {
+    const ids = createTrackIds([]);
+    const forced: EngineTrackView = {
+      id: 'text:en-forced',
+      contentType: 'text',
+      mimeType: 'text/vtt',
+      lang: 'en',
+      forced: true,
+    };
+    const tracks = ids.sync([...ENGINE, forced], []);
+    expect(tracks.map((t) => t.language)).toEqual(['en', 'fr', 'de']);
+    expect(
+      ids.idOf({ origin: 'engine', contentType: 'text', trackId: 'text:en-forced' }),
+    ).toBeNull();
+    expect(ids.byLanguage('en')).toBeNull();
+  });
+
   it('answers null for an id it never gave', () => {
     expect(createTrackIds([]).target(9)).toBeNull();
   });
