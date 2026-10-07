@@ -17,8 +17,10 @@ export interface EngineTrackView {
   readonly contentType: string;
   readonly mimeType: string;
   readonly lang?: string;
+  /** The manifest's name for the track: HLS NAME, DASH Label. */
+  readonly name?: string;
   readonly role?: string;
-  /** A forced-subtitle track. mattebox 0.9 sets it; earlier releases never do. */
+  /** A forced-subtitle track, which the engine shows by itself. */
   readonly forced?: boolean;
 }
 
@@ -122,9 +124,9 @@ export function createTrackIds(sender: readonly CastLoadTrack[]): TrackIds {
         type: audio ? 'AUDIO' : 'TEXT',
         ...(audio ? {} : { subtype: track.role === 'caption' ? 'CAPTIONS' : 'SUBTITLES' }),
         trackContentType: track.mimeType,
-        // The name a viewer reads: the language, then the role, then the id,
-        // the order the player's own menus use.
-        name: track.lang ?? track.role ?? track.id,
+        // The name a viewer reads: the manifest's, then the language code,
+        // which a sender names in its own language, then the role and the id.
+        name: track.name ?? track.lang ?? track.role ?? track.id,
         language: track.lang ?? '',
       });
       present.add(keyOf(target));

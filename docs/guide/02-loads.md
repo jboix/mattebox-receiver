@@ -134,6 +134,8 @@ ids with these rules:
 - The engine's audio and text tracks take the next free numbers. In a native session, the video's text tracks take them instead.
 - The library assigns an id once per load and never changes it. An `EDIT_TRACKS_INFO` message therefore always names a track that still exists.
 - The library leaves out forced subtitle tracks. The engine shows them by itself while no subtitle is selected.
+- The library leaves out tracks the device cannot decode, as `engine.tracks.selectable` reports them.
+- An engine track takes the manifest's name (HLS `NAME`, DASH `Label`), or its language code without one.
 
 When a sender sends `EDIT_TRACKS_INFO`, the library selects the engine's
 tracks through `engine.tracks`.

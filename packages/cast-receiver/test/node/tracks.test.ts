@@ -132,4 +132,25 @@ describe('createTrackIds', () => {
   it('answers null for an id it never gave', () => {
     expect(createTrackIds([]).target(9)).toBeNull();
   });
+
+  it("names an engine track by the manifest's name, then by its language code", () => {
+    const ids = createTrackIds([]);
+    const tracks = ids.sync(
+      [
+        {
+          id: 'audio:en',
+          contentType: 'audio',
+          mimeType: 'audio/mp4',
+          lang: 'en',
+          name: 'English',
+        },
+        { id: 'audio:fr', contentType: 'audio', mimeType: 'audio/mp4', lang: 'fr' },
+      ],
+      [],
+    );
+    expect(tracks.map((t) => [t.name, t.language])).toEqual([
+      ['English', 'en'],
+      ['fr', 'fr'],
+    ]);
+  });
 });

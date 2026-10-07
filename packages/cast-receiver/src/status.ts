@@ -77,8 +77,12 @@ export function readTracks(
   ids: TrackIds,
 ): { tracks: MediaTrack[]; active: number[] } {
   const engine = player.engine;
+  // A track the device cannot decode is not offered: a sender picking it
+  // would get silence or an error.
   const tracks = ids.sync(
-    engine === null ? null : engine.tracks.available,
+    engine === null
+      ? null
+      : engine.tracks.available.filter((track) => engine.tracks.selectable(track.id)),
     textTracks(player.video),
   );
   const active: number[] = [];
