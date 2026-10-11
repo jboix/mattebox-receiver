@@ -31,7 +31,7 @@ mattebox-player {
 /* The idle wallpaper: the moment with nothing loaded. */
 mattebox-player:not([src]) {
   background:
-    radial-gradient(90vh 70vh at 95% -10%, rgba(91, 140, 255, 0.16), transparent 62%), #08080a;
+    radial-gradient(90vh 70vh at 95% -10%, rgba(224, 84, 60, 0.16), transparent 62%), #141417;
 }
 
 mattebox-player:not([src])::after {
@@ -47,7 +47,7 @@ mattebox-player:not([src])::after {
     sans-serif;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #9aa0a6;
+  color: #aaa49a;
 }
 
 /* The bar: clear of the overscan edge, and twice a desktop's size at 720p. */
