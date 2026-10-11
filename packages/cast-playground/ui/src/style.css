@@ -12,25 +12,27 @@
 :root {
   color-scheme: light;
 
-  --ground: #e6e4de;
-  --panel: #f2f1ec;
+  --ground: #f3ede4;
+  --panel: #fbf8f3;
   --field: #ffffff;
-  --ink: #16191c;
-  --ink-soft: #5f635f;
-  --rule: #c8c5bc;
-  --hinge: #16191c;
+  --ink: #2b2b30;
+  --ink-soft: #5f5c5a;
+  --rule: #c9bfae;
+  /* Focus, selection and form controls: the vermilion of the mark, as text. */
+  --accent: #b23a23;
+  --hinge: #2b2b30;
 
   /* Sent to the receiver. */
-  --out: #2f5fa8;
+  --out: #4f6480;
   /* Answered by the receiver, and the state of a session that plays. */
-  --claim: #2c6a58;
+  --claim: #1f5e38;
   /* An error, and the live dot. */
-  --tally: #b5301a;
+  --tally: #b23a23;
   --wait: #8a6100;
 
-  --code: #1a1e21;
-  --code-ink: #eceae3;
-  --code-soft: #8d938f;
+  --code: #2b2b30;
+  --code-ink: #e9e3d9;
+  --code-soft: #aaa49a;
 
   --step: 0.75rem;
   --flag-right: 24rem;
@@ -40,45 +42,47 @@
   --mono: "JetBrains Mono", ui-monospace, monospace;
 
   /* The chevron on every select, drawn here so it sits where the padding says and not against the edge. */
-  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%2316191c' stroke-width='1.6'/%3E%3C/svg%3E");
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%232b2b30' stroke-width='1.6'/%3E%3C/svg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --ground: #121416;
-    --panel: #1b1e22;
-    --field: #24282d;
-    --ink: #e8e4da;
-    --ink-soft: #9aa09c;
-    --rule: #2c3136;
-    --hinge: #454b52;
-    --out: #8fb4f0;
-    --claim: #7fd0b4;
-    --tally: #ff8a75;
+    --ground: #1c1c20;
+    --panel: #24242a;
+    --field: #2b2b30;
+    --ink: #f3ede4;
+    --ink-soft: #aaa49a;
+    --rule: #3a3a41;
+    --accent: #f08068;
+    --hinge: #4a4a52;
+    --out: #a9bcd6;
+    --claim: #9fd3ad;
+    --tally: #f08068;
     --wait: #e6bd62;
-    --code: #0d0f11;
-    --code-ink: #d9d5cb;
-    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23e8e4da' stroke-width='1.6'/%3E%3C/svg%3E");
+    --code: #141417;
+    --code-ink: #e9e3d9;
+    --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23f3ede4' stroke-width='1.6'/%3E%3C/svg%3E");
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --ground: #121416;
-  --panel: #1b1e22;
-  --field: #24282d;
-  --ink: #e8e4da;
-  --ink-soft: #9aa09c;
-  --rule: #2c3136;
-  --hinge: #454b52;
-  --out: #8fb4f0;
-  --claim: #7fd0b4;
-  --tally: #ff8a75;
+  --ground: #1c1c20;
+  --panel: #24242a;
+  --field: #2b2b30;
+  --ink: #f3ede4;
+  --ink-soft: #aaa49a;
+  --rule: #3a3a41;
+  --accent: #f08068;
+  --hinge: #4a4a52;
+  --out: #a9bcd6;
+  --claim: #9fd3ad;
+  --tally: #f08068;
   --wait: #e6bd62;
-  --code: #0d0f11;
-  --code-ink: #d9d5cb;
-  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23e8e4da' stroke-width='1.6'/%3E%3C/svg%3E");
+  --code: #141417;
+  --code-ink: #e9e3d9;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23f3ede4' stroke-width='1.6'/%3E%3C/svg%3E");
 }
 
 * {
@@ -116,6 +120,12 @@ body {
   gap: calc(var(--step) * 1.5);
   padding: 0.5rem calc(var(--step) * 2);
   border-bottom: 1px solid var(--rule);
+}
+
+/* The mark leads to the website. */
+.home {
+  display: flex;
+  flex: none;
 }
 
 .logo {
@@ -294,7 +304,7 @@ button:disabled:hover {
 }
 
 :focus-visible {
-  outline: 2px solid var(--claim);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
@@ -308,6 +318,20 @@ button:disabled:hover {
   line-height: 1;
   color: var(--ink-soft);
   background: transparent;
+}
+
+/* The room toggle is an icon alone, the size of the repository link beside it. */
+.theme-toggle {
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
+.theme-toggle svg {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
 }
 
 .chooser:hover,
@@ -383,7 +407,7 @@ button:disabled:hover {
   height: 1rem;
   margin: 0;
   padding: 0;
-  accent-color: var(--claim);
+  accent-color: var(--accent);
 }
 
 #start {
@@ -401,7 +425,7 @@ button:disabled:hover {
   padding: 0;
   border: 0;
   background: transparent;
-  accent-color: var(--claim);
+  accent-color: var(--accent);
 }
 
 .seek output {
@@ -562,7 +586,7 @@ button:disabled:hover {
 
 /* The pick that is playing, marked on its edge. After every plainer button rule. */
 .picks li.current button {
-  box-shadow: inset 4px 0 0 var(--claim);
+  box-shadow: inset 4px 0 0 var(--accent);
 }
 
 .pick-title {
@@ -662,23 +686,23 @@ button:disabled:hover {
 }
 
 #log li[data-way="out"] b {
-  color: #8fb4f0;
+  color: #a9bcd6;
 }
 
 #log li[data-way="in"] b {
-  color: #7fd0b4;
+  color: #9fd3ad;
 }
 
 #log li[data-way="error"] b,
 #log li[data-way="error"] summary {
-  color: #ff8a75;
+  color: #f08068;
 }
 
 #log pre {
   margin: 0.2rem 0 0.5rem;
   padding: 0.5rem 0.7rem;
   overflow-x: auto;
-  border-left: 2px solid #2c3236;
+  border-left: 2px solid #3a3a41;
   color: var(--code-soft);
 }
 
