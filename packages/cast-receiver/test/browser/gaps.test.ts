@@ -5,7 +5,6 @@
  */
 import '@mattebox/player';
 import { MatteboxPlayerElement } from '@mattebox/player';
-import type { Source } from '@mattebox/player-core';
 import { nativeHandler } from '@mattebox/player-core';
 import { afterEach, describe, expect, it } from 'vitest';
 import { silence } from './helpers.js';
@@ -19,43 +18,6 @@ function wait(ms: number): Promise<void> {
 }
 
 describe('gaps in @mattebox/player, as released', () => {
-  it('define(options) never reaches a player that is already in the page (app/src/main.ts)', async () => {
-    // Importing the package registers the element, and imports run before
-    // the module's own code, so a player in the markup is upgraded with the
-    // empty defaults before `define({ handlers })` can run.
-    const parsed = document.createElement('mattebox-player');
-    parsed.setAttribute('muted', '');
-    parsed.setAttribute('type', 'audio/wav');
-    document.body.append(parsed);
-
-    const native = nativeHandler();
-    // The page's own chain: the native handler, under a name that tells it apart.
-    const page = {
-      ...native,
-      name: 'page',
-      handle: async (source: Source, video: HTMLMediaElement) => ({
-        ...(await native.handle(source, video)),
-        handler: 'page',
-      }),
-    };
-    MatteboxPlayerElement.define({ handlers: [page] });
-    try {
-      parsed.setAttribute('src', silence(1));
-      // The element resolves its default preset with a dynamic import first.
-      await expect.poll(() => parsed.player?.session?.handler, { timeout: 10_000 }).toBe('native');
-
-      // A player created after the call does get them.
-      const later = document.createElement('mattebox-player');
-      later.setAttribute('muted', '');
-      later.setAttribute('type', 'audio/wav');
-      later.setAttribute('src', silence(1));
-      document.body.append(later);
-      await expect.poll(() => later.player?.session?.handler).toBe('page');
-    } finally {
-      MatteboxPlayerElement.define({});
-    }
-  });
-
   it('removing src does not unload: the core keeps its session (receiver.ts, toIdle)', async () => {
     const player = new MatteboxPlayerElement({ handlers: [nativeHandler()] });
     player.setAttribute('muted', '');

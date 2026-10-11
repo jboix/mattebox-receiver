@@ -83,7 +83,7 @@ export interface ReceiverOptions {
   readonly resolve?: (load: CastLoad) => Load | Promise<Load>;
   /** Stages for the engine, merged by name over the preset's: a name the preset has replaces its instance, which is how a stage gets options. */
   readonly stages?: readonly Stage[];
-  /** Names of preset stages to leave out, such as `cmcd`. The engine refuses a name another stage requires. */
+  /** Names of preset stages to leave out, such as `thumbnails`. The engine refuses a name another stage requires. */
   readonly without?: readonly string[];
   /** Kernel tuning for the engine. Default: the memory profile for the device. */
   readonly config?: Partial<KernelConfig>;

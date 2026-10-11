@@ -50,15 +50,18 @@ document.body.append(player);
 receiver.start(player);
 ```
 
-You must create the player in script, because the player needs the
-receiver's handlers. With `@mattebox/player` 0.5.0, you cannot give the
-handlers to a player that you wrote in the HTML. Importing the package
-registers the element before `MatteboxPlayerElement.define({ handlers })` can
-run.
+You can also write the player in the HTML, with its controls. Give it the
+receiver's handlers with `MatteboxPlayerElement.define({ handlers })` before
+it loads a source. From `@mattebox/player` 0.9.0, the call reaches a player
+that is already in the page. The app does this.
 
-You can still write the player's controls in the HTML. Create a player in
-script and move the attributes and the controls of the HTML player into it.
-The app does this in its `adopt()` function.
+```ts
+MatteboxPlayerElement.define({ handlers: receiver.handlers() });
+receiver.start(document.querySelector("mattebox-player"));
+```
+
+With an older player, create the player in script: importing the package
+registers the element before `define` can run.
 
 `createReceiver` takes these options:
 
@@ -67,7 +70,7 @@ The app does this in its `adopt()` function.
 | `preset`   | Sets the stages of the engine. You import the preset yourself. The library bundles no preset                                                |
 | `resolve`  | Converts the sender's request into what the player loads. The default is `defaultResolve`                                                   |
 | `stages`   | Adds stages to the engine. The library merges them with the preset's stages by name. A stage replaces the preset's stage with the same name |
-| `without`  | Lists the names of the preset stages that you want to leave out, such as `cmcd`                                                             |
+| `without`  | Lists the names of the preset stages that you want to leave out, such as `thumbnails`                                                       |
 | `config`   | Tunes the kernel of the engine. The default is the memory profile for the device                                                            |
 | `messages` | Lists your custom namespaces. Each namespace has its own handler                                                                            |
 | `debug`    | Turns on the Cast debug logger and its overlay. The default is false                                                                        |
@@ -75,7 +78,7 @@ The app does this in its `adopt()` function.
 ## The preset
 
 Use the `full` preset. It contains both protocols (HLS and DASH), MPEG-TS
-segments, the three EME stages, `cmcd` and `thumbnails`.
+segments, the three EME stages and `thumbnails`.
 
 A receiver needs every protocol and every segment format. The sender chooses
 the protocol and the segment format, and you build the page before any
@@ -90,16 +93,20 @@ You can remove a stage in two ways:
   and the library bundles none.
 
 ```ts
-createReceiver({ preset: full, without: ["cmcd"] });
+createReceiver({ preset: full, without: ["thumbnails"] });
 ```
 
-The `cmcd` stage adds a `CMCD` query argument to every request to the CDN.
-Remove it when your CDN signs the whole URL, or when your CDN uses the query
-in its cache key.
+No preset has the `cmcd` stage since mattebox 0.14, because it changes every
+request to the CDN. Add it in `stages` when your CDN reads CMCD:
+
+```ts
+import cmcd from "mattebox/stages/cmcd";
+
+createReceiver({ preset: full, stages: [cmcd()] });
+```
 
 You can replace a preset stage. Pass a stage in `stages` with the same name
-as the preset's stage. Use this to give `cmcd` a content id or to set its
-header mode.
+as the preset's stage.
 
 ## The receiver
 

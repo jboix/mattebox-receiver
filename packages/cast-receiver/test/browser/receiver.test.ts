@@ -308,14 +308,14 @@ describe('an engine session', () => {
 
   it("composes the preset's every stage by default", async () => {
     const stages = await composed();
-    expect(stages).toContain('cmcd');
+    expect(stages).toContain('hls-cmaf');
     expect(stages).toContain('thumbnails');
   });
 
   it("leaves out the preset's stages named in `without`", async () => {
-    const stages = await composed(['cmcd']);
-    expect(stages).not.toContain('cmcd');
-    expect(stages).toContain('thumbnails');
+    const stages = await composed(['thumbnails']);
+    expect(stages).not.toContain('thumbnails');
+    expect(stages).toContain('hls-cmaf');
   });
 
   it('reports the tracks under stable ids and selects through engine.tracks', async () => {

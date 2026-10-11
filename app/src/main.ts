@@ -49,29 +49,6 @@ function loadLogger(): Promise<void> {
   if (icon !== null) icon.href = logoUrl;
 }
 
-/**
- * The player, with the receiver's chain.
- *
- * Wanted: the three lines of the library's guide, with
- * `MatteboxPlayerElement.define({ handlers })` reaching the player in the
- * markup. Importing the player registers the element, imports run before
- * this module's own code, and an element upgraded by then keeps the empty
- * defaults for good. Had to: build a second player with the chain, move
- * the markup's attributes and controls into it, and swap it in. The surface
- * that would make it one call: options the element reads at its first load,
- * or a registration the page can hold back.
- */
-function adopt(parsed: Element, options: ConstructorParameters<typeof MatteboxPlayerElement>[0]) {
-  const player = new MatteboxPlayerElement(options);
-  for (const { name, value } of Array.from(parsed.attributes)) player.setAttribute(name, value);
-  // The parsed player put its own video among its children. The controls move, the video stays behind.
-  for (const child of Array.from(parsed.children)) {
-    if (child.localName !== 'video') player.append(child);
-  }
-  parsed.replaceWith(player);
-  return player;
-}
-
 /** A sender's load, from the query string. */
 function simulated(url: string): CastLoad {
   const text = (name: string): string | undefined => query.get(name) ?? undefined;
@@ -106,15 +83,18 @@ function simulated(url: string): CastLoad {
 }
 
 async function main(): Promise<void> {
-  const parsed = document.querySelector('mattebox-player');
-  if (parsed === null) throw new Error('the page has no <mattebox-player>');
+  const player = document.querySelector<MatteboxPlayerElement>('mattebox-player');
+  if (player === null) throw new Error('the page has no <mattebox-player>');
   if (debug) await loadLogger();
 
-  // The `full` preset: every protocol and tier, with `cmcd` and `thumbnails`.
+  // The `full` preset: every protocol and tier, with `thumbnails`.
   // A page that wants fewer bytes passes a smaller preset, and one that
   // wants a stage off names it in `without`.
   const receiver = createReceiver({ preset: full, resolve, debug });
-  const player = adopt(parsed, { handlers: receiver.handlers() });
+  // The player is in the markup, with its controls. `define` gives it the
+  // receiver's chain: from player 0.9 the call reaches a player already in
+  // the page, as long as it has loaded nothing yet.
+  MatteboxPlayerElement.define({ handlers: receiver.handlers() });
 
   // A television plays sound. The markup says `muted` for the desktop, where
   // a browser refuses to autoplay anything else.

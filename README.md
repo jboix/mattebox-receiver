@@ -28,7 +28,7 @@ player's core. The playground is optional.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/size-chart-dark.svg">
-  <img alt="What a Mattebox receiver page carries, min+gzip, JavaScript only. A Mattebox receiver page, with the library, the player and the engine as the app composes them, is 65.4 KB. Shaka Player, the compiled build with no UI that the framework loads without skipPlayersLoad, is 234.4 KB." src="docs/size-chart-light.svg">
+  <img alt="What a Mattebox receiver page carries, min+gzip, JavaScript only. A Mattebox receiver page, with the library, the player and the engine as the app composes them, is 97.2 KB. Shaka Player, the compiled build with no UI that the framework loads without skipPlayersLoad, is 234.4 KB." src="docs/size-chart-light.svg">
 </picture>
 
 By default, Google's framework downloads Shaka Player to play the media.
