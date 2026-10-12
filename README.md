@@ -87,7 +87,7 @@ The [guide](docs/guide/README.md) covers the rest, starting with
 - [Architecture](docs/architecture.md): the parts of the repository and how the status reaches the sender.
 - [App documentation](app/README.md): how to run the demo app, its files and its query parameters.
 - [Playground](packages/cast-playground/README.md): how to use the playground and its options.
-- [Demo](https://jboix.github.io/mattebox-receiver/): the demo app, deployed.
+- [Demo](https://cast.mattebox.ch/): the demo app, deployed.
 
 ## Contributing
 
