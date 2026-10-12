@@ -2,7 +2,7 @@
 
 This is the demo receiver page. It shows how to build a receiver with
 `@mattebox/cast-receiver`, and it is deployed to
-[GitHub Pages](https://jboix.github.io/mattebox-receiver/). All the
+[cast.mattebox.ch](https://cast.mattebox.ch/). All the
 vendor-specific code of this repository is here.
 
 | File             | Is                                                                                      |
