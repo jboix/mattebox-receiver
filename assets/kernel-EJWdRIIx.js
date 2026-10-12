@@ -1,0 +1,1 @@
+import{u as e}from"./index-_fir34fK.js";var t=e(`kernel`,()=>[]);export{t as default};
