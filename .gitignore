@@ -5,6 +5,11 @@ node_modules/
 /.pnp
 .pnp.*
 
+# the project uses npm: package-lock.json is the only lockfile
+pnpm-lock.yaml
+pnpm-workspace.yaml
+yarn.lock
+
 # build output
 dist/
 .vite/
