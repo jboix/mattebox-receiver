@@ -1,6 +1,6 @@
 {
   "name": "@mattebox/cast-receiver",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "The bridge between Google's Cast receiver framework and <mattebox-player>, with hooks. No DOM of its own.",
   "author": "Josep Boix Requesens",
   "repository": {
