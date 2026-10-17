@@ -17,4 +17,4 @@ the integrity of our users and their projects. We do not offer bounties, but
 if you wish we will credit you in the release notes.
 
 Before reporting, make sure you are on the latest version of the packages and
-a supported Node version (20.19 or later).
+a supported Node version (24 or later).

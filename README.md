@@ -85,6 +85,7 @@ The [guide](docs/guide/README.md) covers the rest, starting with
 
 - [Guide](docs/guide/README.md): the page, loads, deployment and registration.
 - [Architecture](docs/architecture.md): the parts of the repository and how the status reaches the sender.
+- [Stability](docs/stability.md): what you can rely on before 1.0, and what 1.0 promises.
 - [App documentation](app/README.md): how to run the demo app, its files and its query parameters.
 - [Playground](packages/cast-playground/README.md): how to use the playground and its options.
 - [Demo](https://cast.mattebox.ch/): the demo app, deployed.
@@ -94,6 +95,9 @@ The [guide](docs/guide/README.md) covers the rest, starting with
 See the [contributing guide](docs/CONTRIBUTING.md). Participation is governed
 by the [Code of Conduct](docs/CODE_OF_CONDUCT.md). Vulnerabilities go through
 [SECURITY.md](docs/SECURITY.md).
+
+The node and Chromium test tiers cover 92% of the lines in the packages
+(2026-10-16). CI fails below 90%.
 
 ## License
 

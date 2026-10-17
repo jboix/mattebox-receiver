@@ -55,15 +55,16 @@ jobs:
         run: npm run check:size-chart
       - name: Package validation
         run: npm run check:package
-      - name: Node tests (with coverage)
-        run: npm run test:node -- --coverage
+      - name: Install browsers
+        uses: ./.github/actions/playwright-browsers
+      # Node and Chromium together, so coverage includes the browser code.
+      - name: Node and Chromium tests, with coverage thresholds
+        run: npm run test:coverage
       - name: Report Coverage
         if: github.event_name == 'pull_request'
         uses: davelosert/vitest-coverage-report-action@c4bbc33a89b7ace0e63d35f1f7d4bcee31155a73 # v2
-      - name: Install browsers
-        uses: ./.github/actions/playwright-browsers
-      - name: Browser tests
-        run: npm run test:browser
+      - name: Browser tests in Firefox and WebKit
+        run: npx vitest run --project=firefox --project=webkit
 
   # The app's page in three real browsers, over its sources. Its own job so the
   # verify tiers and the browsers download in parallel; `npm run test:e2e`

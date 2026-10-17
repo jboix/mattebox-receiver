@@ -60,9 +60,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['packages/*/src/**'],
-      // v8 cannot instrument Firefox or WebKit; coverage measures the node tier.
+      // `test:coverage` merges the node tier and the Chromium browser tier,
+      // which covers the receiver against the real engine. v8 instruments
+      // Chromium only.
       exclude: ['packages/cast-receiver/src/index.ts', 'packages/cast-receiver/src/types.ts'],
-      // json-summary and json feed the PR coverage comment. No thresholds.
+      // The measured figures on 2026-10-16 minus two points. Raise them
+      // when coverage rises; never lower them to pass.
+      thresholds: { statements: 88, branches: 77, functions: 91, lines: 90 },
+      // json-summary and json feed the PR coverage comment.
       reporter: ['text', 'json-summary', 'json'],
     },
     projects: [
