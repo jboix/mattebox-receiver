@@ -1,0 +1,1 @@
+import{u as e}from"./index-BgrE8Ba9.js";var t=e(`kernel`,()=>[]);export{t as default};
