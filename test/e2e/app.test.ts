@@ -6,6 +6,7 @@
 import type { MatteboxPlayerElement } from '@mattebox/player';
 import { beforeAll, describe, expect, it } from 'vitest';
 import page from '../../app/index.html?raw';
+import { violations } from '../browser/axe.js';
 import '../../app/src/style.css';
 
 /** A valid WAV in a data URL: a source every browser plays, and that a query string can carry. */
@@ -78,6 +79,10 @@ describe('the receiver page', () => {
     expect(title?.getAttribute('artwork')).toBe('https://example.com/a.jpg');
   });
 
+  it('finds nothing for axe-core while it plays', async () => {
+    expect(await violations(document.body)).toEqual([]);
+  });
+
   it('shows the wallpaper once nothing is loaded, and hides the video and the bar under it', async () => {
     await expect.poll(() => player().hasAttribute('src'), { timeout: 10_000 }).toBe(false);
     expect(player().matches('mattebox-player:not([src])')).toBe(true);
@@ -86,5 +91,9 @@ describe('the receiver page', () => {
     const bar = player().querySelector('mbx-control-bar');
     expect(bar === null ? 'hidden' : getComputedStyle(bar).visibility).toBe('hidden');
     expect(getComputedStyle(player()).backgroundImage).toContain('gradient');
+  });
+
+  it('finds nothing for axe-core on the wallpaper', async () => {
+    expect(await violations(document.body)).toEqual([]);
   });
 });

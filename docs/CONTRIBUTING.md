@@ -30,10 +30,11 @@ npm run verify    # everything CI checks
 | `npx size-limit`             | size-limit                    | The library stays within its size budget, min+brotli                                       |
 | `npm run check:size-chart`   | scripts/size-chart.mjs        | docs/size-chart-\*.svg match the build and the pinned stacks                               |
 | `npm run check:package`      | packages/\*/package.json      | publint and attw pass on the packed package                                                |
+| `npm run check:a11y`         | axe-core                      | The playground's page, its dialog and both schemes, against WCAG 2.2 A and AA              |
 | `npm run test`               | Vitest                        | The Node tests, and the browser tests in Chromium, Firefox and WebKit                      |
 
 `npm run test:e2e` runs the app's page suite. The suite uses Vitest browser
-mode over the app's sources, in Chromium, Firefox and WebKit. CI runs it on
+mode over the app's sources, in Chromium, Firefox and WebKit, axe-core included. CI runs it on
 every pull request. `verify` does not run it.
 
 You cannot automate the test on a device. You can get close on a desktop in

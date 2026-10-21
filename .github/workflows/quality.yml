@@ -57,6 +57,9 @@ jobs:
         run: npm run check:package
       - name: Install browsers
         uses: ./.github/actions/playwright-browsers
+      # axe-core over the playground's page, in each state and both schemes.
+      - name: Accessibility
+        run: npm run check:a11y
       # Node and Chromium together, so coverage includes the browser code.
       - name: Node and Chromium tests, with coverage thresholds
         run: npm run test:coverage
