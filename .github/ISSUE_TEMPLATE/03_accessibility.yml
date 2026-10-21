@@ -1,0 +1,33 @@
+name: ♿ Accessibility barrier
+description: Something on the Cast receiver you cannot see, hear or use
+title: "♿ <TITLE>"
+labels: ["accessibility"]
+body:
+  - type: textarea
+    id: barrier
+    attributes:
+      label: What stopped you?
+      description: What you tried to do, where, and what got in the way.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >
+        The receiver library version, the Cast device and its firmware, the sender (app, browser or phone) with its version, and any assistive technology on the TV or the sender with its version.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What would work for you?
+      description: Optional. How you expected it to work, or what would help.
+  - type: checkboxes
+    id: coc
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/jboix/mattebox-receiver/blob/main/docs/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow Mattebox's Code of Conduct
+          required: true
