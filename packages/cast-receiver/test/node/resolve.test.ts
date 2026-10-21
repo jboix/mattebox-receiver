@@ -68,3 +68,41 @@ describe('headersFor', () => {
     expect(request.headers.authorization).toBe('new');
   });
 });
+
+describe('DRM servers in customData.mattebox', () => {
+  it('reads licenseUrls and certificateUrl, keeping only strings', () => {
+    const resolved = defaultResolve(
+      load({
+        mattebox: {
+          licenseUrls: { 'com.widevine.alpha': 'https://drm.example/wv', bad: 1 },
+          certificateUrl: 'https://drm.example/cert',
+        },
+      }),
+    );
+    expect(resolved).toMatchObject({
+      licenseUrls: { 'com.widevine.alpha': 'https://drm.example/wv' },
+      certificateUrl: 'https://drm.example/cert',
+    });
+  });
+
+  it('puts the license headers on every license server', () => {
+    const [hook] =
+      defaultResolve(
+        load({
+          mattebox: {
+            licenseUrl: 'https://drm.example/any',
+            licenseUrls: { 'com.microsoft.playready': 'https://drm.example/pr' },
+            licenseHeaders: { Authorization: 'Bearer abc' },
+          },
+        }),
+      ).requestHooks ?? [];
+    const to = (url: string) => {
+      const request = { url, headers: {} as Record<string, string> };
+      hook?.(request);
+      return request.headers;
+    };
+    expect(to('https://drm.example/any')).toEqual({ Authorization: 'Bearer abc' });
+    expect(to('https://drm.example/pr')).toEqual({ Authorization: 'Bearer abc' });
+    expect(to('https://cdn.example/master.m3u8')).toEqual({});
+  });
+});

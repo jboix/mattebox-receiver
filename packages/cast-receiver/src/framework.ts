@@ -142,6 +142,8 @@ export interface CastReceiverOptions {
 export interface CastReceiverContext {
   getPlayerManager(): PlayerManager;
   addCustomMessageListener(namespace: string, listener: (event: CustomMessageEvent) => void): void;
+  /** To one sender, or to every sender when `senderId` is undefined. */
+  sendCustomMessage(namespace: string, senderId: string | undefined, message: unknown): void;
   getSenders(): ReadonlyArray<{ readonly id: string }>;
   /** Null until the context is ready. */
   getDeviceCapabilities(): Readonly<Record<string, unknown>> | null;

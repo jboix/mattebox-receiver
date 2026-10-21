@@ -54,6 +54,10 @@ export interface Load {
   readonly url: string;
   readonly type?: string;
   readonly licenseUrl?: string;
+  /** One license server per key system, such as `com.widevine.alpha`. It wins over `licenseUrl`. */
+  readonly licenseUrls?: Readonly<Record<string, string>>;
+  /** The FairPlay certificate, or a Widevine service certificate, the element's `certificate-url`. */
+  readonly certificateUrl?: string;
   /** A WebVTT sprite-sheet track, the element's `thumbnails` attribute. */
   readonly thumbnails?: string;
   /** Seen by every request the engine makes, the license request included. */
@@ -63,8 +67,19 @@ export interface Load {
 /** The one convention the default resolver reads: `customData.mattebox`. Every member is optional. */
 export interface MatteboxCustomData {
   readonly licenseUrl?: string;
+  readonly licenseUrls?: Readonly<Record<string, string>>;
+  readonly certificateUrl?: string;
+  /** Headers for every license request: those to `licenseUrl` and to each of `licenseUrls`. */
   readonly licenseHeaders?: Readonly<Record<string, string>>;
   readonly thumbnails?: string;
+}
+
+/** What eme-core calls when the license server answers 401 or 403. */
+export interface LicenseRefresh {
+  readonly onUnauthorized: (context: {
+    readonly keySystem: string;
+    readonly status: number;
+  }) => Promise<void>;
 }
 
 export interface ReceiverMessages {
@@ -89,6 +104,14 @@ export interface ReceiverOptions {
   readonly config?: Partial<KernelConfig>;
   /** Custom namespaces, passed through. */
   readonly messages?: readonly ReceiverMessages[];
+  /**
+   * The `eme-core` factory from `mattebox/stages/eme-core`. With it, a
+   * license request the server answers with 401 or 403 asks the senders for
+   * new license headers on `urn:x-cast:ch.mattebox.license`, and goes again
+   * with them. The receiver adds the stage it builds after `stages`. The
+   * engine calls the hook from version 0.15; an older engine ignores it.
+   */
+  readonly emeCore?: (options: LicenseRefresh) => Stage;
   /** The Cast debug logger on, with the overlay. Default false. */
   readonly debug?: boolean;
 }

@@ -33,6 +33,8 @@ interface Load {
   url: string;
   type?: string;
   licenseUrl?: string;
+  licenseUrls?: Record<string, string>;
+  certificateUrl?: string;
   thumbnails?: string;
   requestHooks?: Array<
     (request: { url: string; headers: Record<string, string> }) => void
@@ -42,13 +44,15 @@ interface Load {
 
 The library uses each member of the `Load` as follows:
 
-| Member         | What the library does with it                                                                            |
-| -------------- | -------------------------------------------------------------------------------------------------------- |
-| `url`          | Sets the element's `src`. The element loads again when you set `src` to the value it already has         |
-| `type`         | Sets the element's `type`. The element trusts `type` over the URL's extension                            |
-| `licenseUrl`   | Sets the element's `license-url`. The element gives it to `engine.drm.setLicenseUrl`                     |
-| `thumbnails`   | Sets the element's `thumbnails`. You need the `thumbnails` stage and `<mbx-seek-bar>`                    |
-| `requestHooks` | Calls each hook for every request that the engine makes for this load. This includes the license request |
+| Member           | What the library does with it                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- |
+| `url`            | Sets the element's `src`. The element loads again when you set `src` to the value it already has           |
+| `type`           | Sets the element's `type`. The element trusts `type` over the URL's extension                              |
+| `licenseUrl`     | Sets the element's `license-url`. The element gives it to `engine.drm.setLicenseUrl`                       |
+| `licenseUrls`    | Gives the engine one license server per key system, with `engine.drm.setLicenseUrls`. Engine sessions only |
+| `certificateUrl` | Sets the element's `certificate-url`, the FairPlay or Widevine service certificate                         |
+| `thumbnails`     | Sets the element's `thumbnails`. You need the `thumbnails` stage and `<mbx-seek-bar>`                      |
+| `requestHooks`   | Calls each hook for every request that the engine makes for this load. This includes the license request   |
 
 The default function is `defaultResolve`. It copies the request's `url` and
 `type`, and it reads one key of `customData`.
@@ -63,6 +67,8 @@ button.addEventListener("castload", (event) => {
   event.detail.customData = {
     mattebox: {
       licenseUrl: "https://drm.example/widevine",
+      licenseUrls: { "com.microsoft.playready": "https://drm.example/playready" },
+      certificateUrl: "https://drm.example/fairplay.cer",
       licenseHeaders: { "x-token": token },
       thumbnails: "https://cdn.example/sprites.vtt",
     },
@@ -70,13 +76,36 @@ button.addEventListener("castload", (event) => {
 });
 ```
 
-All three members are optional. The library converts `licenseHeaders` into a
-request hook. The hook adds the headers to the license request and to no
-other request.
+Every member is optional. `@mattebox/player-cast` fills in `licenseUrl`,
+`licenseUrls` and `certificateUrl` from the source's `drm`. The library
+converts `licenseHeaders` into a request hook. The hook adds the headers to
+the requests to the license servers and to no other request.
 
 The library reads nothing else from `customData`. The sender,
 `@mattebox/player-cast`, does not define a shape for `customData`. This
 library defines a shape for the `mattebox` key only.
+
+## Token refresh
+
+A token can expire during a session. Pass the `eme-core` factory as
+`emeCore`, and a license server's 401 or 403 asks the senders for a new
+token.
+
+```ts
+import emeCore from "mattebox/stages/eme-core";
+
+const receiver = createReceiver({ preset: full, emeCore });
+```
+
+- The receiver sends `{ type: "unauthorized", id, keySystem, status }` on
+  `urn:x-cast:ch.mattebox.license` to every sender.
+- The sender replies `{ type: "license", id, licenseHeaders }`, and may add
+  `licenseUrl` or `licenseUrls`. `@mattebox/player-cast` does this through
+  its `castunauthorized` event.
+- The headers then go on every license request of the load. The license
+  request goes again once.
+- Without a reply in 10 seconds, the request goes again unchanged and fails.
+- The engine calls the hook from version 0.15. An older engine ignores it.
 
 ## Tokens
 

@@ -12,7 +12,7 @@ import type { HookRouter } from './handlers.js';
 import type { CastLoad, Load, ReceiverPlayer } from './types.js';
 
 /** Set before `src`, in this order: each reloads, and the element folds a burst into one load. */
-const BEFORE_SRC = ['type', 'license-url', 'thumbnails'] as const;
+const BEFORE_SRC = ['type', 'license-url', 'certificate-url', 'thumbnails'] as const;
 
 /** A load that a later load, or a stop, replaced before it finished. */
 export class Superseded extends Error {}
@@ -87,6 +87,32 @@ function settled(
   });
 }
 
+/**
+ * Gives the engine of the session that plays `url` its license servers per
+ * key system. Wanted: an attribute for them, as `license-url` is for one.
+ * The element has none, and `sources` would drop `src`, which the page's
+ * idle state reads. Had to: set them on `engine.drm` when the session
+ * starts, the moment the element applies `license-url` itself. A native
+ * session has no engine and gets `license-url` alone. The surface that
+ * would make it one call: a `license-urls` attribute, or DRM on `src`'s
+ * source.
+ */
+function licenseUrlsFor(
+  player: ReceiverPlayer,
+  url: string,
+  urls: Readonly<Record<string, string>>,
+): void {
+  // The next session is this load's, or a later load replaced it: either way, once.
+  const onSource = (event: CustomEvent<Session | null>): void => {
+    player.removeEventListener('sourcechange', onSource);
+    const session = event.detail;
+    if (session === null || session.source.url !== url) return;
+    const drm = (session.engine as { drm?: { setLicenseUrls(urls: object): void } } | null)?.drm;
+    drm?.setLicenseUrls(urls);
+  };
+  player.addEventListener('sourcechange', onSource);
+}
+
 /** The video's events after which a seek that was not possible may be. */
 const SEEKABLE_EVENTS = ['loadedmetadata', 'durationchange', 'progress', 'canplay'];
 
@@ -157,6 +183,9 @@ export function createBridge(
     const outcome = settled(player, resolved.url, stale, replaced);
     write(player, 'type', resolved.type);
     write(player, 'license-url', resolved.licenseUrl);
+    write(player, 'certificate-url', resolved.certificateUrl);
+    if (resolved.licenseUrls !== undefined)
+      licenseUrlsFor(player, resolved.url, resolved.licenseUrls);
     write(player, 'thumbnails', resolved.thumbnails);
     // Setting `src` to its own value loads again, which is what a second
     // LOAD of the same content asks for.

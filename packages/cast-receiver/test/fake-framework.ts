@@ -41,6 +41,8 @@ export interface FakeFramework {
   send(type: string, message: object): Promise<unknown>;
   /** A custom message from a sender. */
   custom(namespace: string, senderId: string, data: unknown): void;
+  /** The custom messages the receiver sent. */
+  readonly customSent: Array<{ namespace: string; senderId: string | undefined; message: unknown }>;
   /** Fires a system event, `ready` among them. */
   fire(type: string): void;
   readonly statuses: MediaStatus[];
@@ -70,6 +72,7 @@ export function installFakeFramework(): FakeFramework {
   const loads: LoadRequestData[] = [];
   const dropped: string[] = [];
   const started: CastReceiverOptions[] = [];
+  const customSent: FakeFramework['customSent'] = [];
   const logger = { enabled: false, shown: false, events: {} as Record<string, number> };
   let element: HTMLMediaElement | null = null;
   /** The framework's own media session: what it loaded, or null while idle or loading. */
@@ -212,6 +215,9 @@ export function installFakeFramework(): FakeFramework {
       }
       custom.set(namespace, [...(custom.get(namespace) ?? []), listener]);
     },
+    sendCustomMessage(namespace: string, senderId: string | undefined, message: unknown): void {
+      customSent.push({ namespace, senderId, message });
+    },
     getSenders: () => [{ id: 'sender-1' }, { id: 'sender-2' }],
     getDeviceCapabilities: () => (started.length > 0 ? { is_hdr_supported: false } : null),
     canDisplayType: () => false,
@@ -267,6 +273,7 @@ export function installFakeFramework(): FakeFramework {
       for (const listener of system.get(type) ?? []) listener();
     },
     statuses,
+    customSent,
     errors,
     loads,
     dropped,

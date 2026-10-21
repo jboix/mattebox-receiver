@@ -5,9 +5,10 @@
  * from the test server, which is all a session needs to exist.
  */
 import type { PlayerError } from '@mattebox/player-core';
+import type { Stage } from 'mattebox';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { ErrorData, MediaStatus } from '../../src/framework.js';
-import type { CastLoad, IdleReason, Load, Receiver } from '../../src/index.js';
+import type { CastLoad, IdleReason, LicenseRefresh, Load, Receiver } from '../../src/index.js';
 import type { FakeFramework } from '../fake-framework.js';
 import { installFakeFramework } from '../fake-framework.js';
 import { fixture, loadMessage, mount, silence, volumeWritable } from './helpers.js';
@@ -427,6 +428,55 @@ describe('custom messages', () => {
     fake.custom('urn:x-cast:b', 'sender-2', data);
     expect(got).toEqual([['b', 'sender-2', data]]);
     expect(got[0]).toContain(data);
+  });
+});
+
+describe('license token refresh', () => {
+  const NAMESPACE = 'urn:x-cast:ch.mattebox.license';
+
+  it('builds eme-core with the hook, and asks the senders for a token on its namespace', async () => {
+    let refresh: LicenseRefresh | null = null;
+    const emeCore = (options: LicenseRefresh): Stage => {
+      refresh = options;
+      return {
+        name: 'eme-core',
+        provides: ['eme-core'],
+        requires: ['mse'],
+        install: () => undefined,
+      };
+    };
+    const { receiver } = mount({ emeCore });
+    expect(fake.started[0]?.customNamespaces?.[NAMESPACE]).toBe('JSON');
+    await loadEngine(
+      receiver,
+      loadMessage(fixture('hls/master.m3u8'), {
+        media: { contentType: 'application/vnd.apple.mpegurl' },
+        customData: { mattebox: { licenseUrl: 'https://drm.example/wv' } },
+      }),
+    );
+    expect(refresh).not.toBeNull();
+    const asked = (refresh as unknown as LicenseRefresh).onUnauthorized({
+      keySystem: 'com.widevine.alpha',
+      status: 401,
+    });
+    expect(fake.customSent).toEqual([
+      {
+        namespace: NAMESPACE,
+        senderId: undefined,
+        message: { type: 'unauthorized', id: 1, keySystem: 'com.widevine.alpha', status: 401 },
+      },
+    ]);
+    fake.custom(NAMESPACE, 'sender-1', {
+      type: 'license',
+      id: 1,
+      licenseHeaders: { Authorization: 'Bearer new' },
+    });
+    await expect(asked).resolves.toBeUndefined();
+  });
+
+  it('registers no namespace without the factory', () => {
+    mount();
+    expect(fake.started[0]?.customNamespaces?.[NAMESPACE]).toBeUndefined();
   });
 });
 

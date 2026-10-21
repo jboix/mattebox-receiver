@@ -18,6 +18,7 @@ import {
   receiverContext,
 } from './framework.js';
 import { chain, createHookRouter } from './handlers.js';
+import { createLicenseChannel, LICENSE_NAMESPACE } from './license.js';
 import { toCastLoad } from './load.js';
 import type { Path } from './path.js';
 import { installPath } from './path.js';
@@ -72,10 +73,20 @@ export function createReceiver(options: ReceiverOptions): Receiver {
     for (const fn of [...(listeners[event] ?? [])]) (fn as (...a: unknown[]) => void)(...args);
   }
 
+  const license = createLicenseChannel(
+    (message) => {
+      if (context === null || context.getSenders().length === 0) return false;
+      context.sendCustomMessage(LICENSE_NAMESPACE, undefined, message);
+      return true;
+    },
+    () => player,
+  );
+
   const bridge: Bridge = createBridge(
     options.resolve ?? defaultResolve,
     router,
     (load, resolved) => {
+      license.loaded(resolved);
       emit('load', load, resolved);
     },
   );
@@ -103,12 +114,23 @@ export function createReceiver(options: ReceiverOptions): Receiver {
           },
           options.debug === true,
         );
+      const refresh =
+        options.emeCore === undefined
+          ? []
+          : [options.emeCore({ onUnauthorized: (context) => license.onUnauthorized(context) })];
       built = chain({
         preset: options.preset,
-        stages: options.stages,
+        stages:
+          options.stages === undefined && refresh.length === 0
+            ? undefined
+            : [...(options.stages ?? []), ...refresh],
         without: options.without,
         config,
-        hook: router.hook,
+        // The load's own hooks first: a refreshed token replaces the header they set.
+        hook: (request) => {
+          router.hook(request);
+          license.hook(request);
+        },
       });
     }
     return built;
@@ -252,6 +274,10 @@ export function createReceiver(options: ReceiverOptions): Receiver {
     manager.setMessageInterceptor(LOAD, onLoad);
 
     const namespaces: Record<string, string> = {};
+    if (options.emeCore !== undefined) {
+      namespaces[LICENSE_NAMESPACE] = 'JSON';
+      context.addCustomMessageListener(LICENSE_NAMESPACE, (event) => license.onMessage(event.data));
+    }
     for (const entry of options.messages ?? []) {
       namespaces[entry.namespace] = 'JSON';
       context.addCustomMessageListener(entry.namespace, (event) => {
