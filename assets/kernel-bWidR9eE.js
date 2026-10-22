@@ -1,0 +1,1 @@
+import{u as e}from"./index-BvYG1YNX.js";var t=e(`kernel`,()=>[]);export{t as default};
