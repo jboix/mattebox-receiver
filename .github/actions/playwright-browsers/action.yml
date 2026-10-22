@@ -1,20 +1,38 @@
 name: Playwright browsers
 description: >-
-  Restore the Playwright browsers from the Actions cache, or download them on a
-  miss. Keyed on the installed Playwright version so a bump refreshes them.
+  Restore the Playwright browsers and their system packages from the Actions
+  cache, or download them on a miss. Keyed on the installed Playwright version
+  so a bump refreshes them.
 runs:
   using: composite
   steps:
-    - name: Playwright version
-      id: playwright
+    - name: Playwright version and runner image
+      id: versions
       shell: bash
-      run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+      run: |
+        echo "playwright=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+        echo "os=${ImageOS}" >> "$GITHUB_OUTPUT"
+        echo "image=${ImageVersion}" >> "$GITHUB_OUTPUT"
     - name: Cache browsers
       id: cache
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+        key: playwright-${{ runner.os }}-${{ steps.versions.outputs.playwright }}
+    - name: Cache system packages
+      id: apt-cache
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/playwright-apt
+        key: playwright-apt-${{ steps.versions.outputs.os }}-${{ steps.versions.outputs.image }}-${{ steps.versions.outputs.playwright }}
+        restore-keys: playwright-apt-${{ steps.versions.outputs.os }}-
+    - name: Prepare apt
+      shell: bash
+      run: |
+        printf 'Acquire::Retries "3";\nAcquire::http::Timeout "30";\n' \
+          | sudo tee /etc/apt/apt.conf.d/80-playwright-ci > /dev/null
+        mkdir -p ~/.cache/playwright-apt
+        sudo find ~/.cache/playwright-apt -name '*.deb' -exec cp -t /var/cache/apt/archives/ {} +
     - name: Download browsers and system deps
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
@@ -25,3 +43,19 @@ runs:
       if: steps.cache.outputs.cache-hit == 'true'
       shell: bash
       run: npx playwright install-deps chromium firefox webkit
+    - name: Keep system packages for the cache
+      if: steps.apt-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        rm -f ~/.cache/playwright-apt/*.deb
+        for deb in /var/cache/apt/archives/*.deb; do
+          [ -e "$deb" ] || continue
+          name=$(dpkg-deb -f "$deb" Package)
+          version=$(dpkg-deb -f "$deb" Version)
+          arch=$(dpkg-deb -f "$deb" Architecture)
+          if dpkg-query -W -f='${Architecture} ${Version}\n' "$name" 2>/dev/null \
+            | grep -qxF "$arch $version"; then
+            cp "$deb" ~/.cache/playwright-apt/
+          fi
+        done
+        du -sh ~/.cache/playwright-apt
