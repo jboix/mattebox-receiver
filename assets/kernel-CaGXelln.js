@@ -1,0 +1,1 @@
+import{u as e}from"./index-D_fLePjM.js";var t=e(`kernel`,()=>[]);export{t as default};
