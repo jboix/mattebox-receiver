@@ -30,7 +30,7 @@
   },
   "scripts": {
     "prepare": "husky",
-    "verify": "npm run lint && npm run docs:check && npm run typecheck && npm run depcruise && npm run knip && npm run build && npm run check:emit && npm run check:side-effects && npx size-limit && npm run check:size-chart && npm run check:package && npm run check:a11y && npm run test",
+    "verify": "npm run check:lock && npm run lint && npm run docs:check && npm run typecheck && npm run depcruise && npm run knip && npm run build && npm run check:emit && npm run check:side-effects && npx size-limit && npm run check:size-chart && npm run check:package && npm run check:a11y && npm run test",
     "build": "npm run build --workspaces",
     "lint": "biome ci .",
     "typecheck": "tsc --noEmit",
@@ -51,7 +51,8 @@
     "app": "vite app",
     "app:build": "vite build app",
     "docs:check": "remark . --quiet --frail --use ./scripts/remark-check-formatted.mjs",
-    "docs:format": "remark . --quiet --output"
+    "docs:format": "remark . --quiet --output",
+    "check:lock": "npm ci --dry-run --ignore-scripts --no-audit --no-fund"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
