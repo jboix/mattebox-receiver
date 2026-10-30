@@ -1,0 +1,1 @@
+import{d as e}from"./index-BaonXcY_.js";var t=e(`kernel`,()=>[]);export{t as default};
