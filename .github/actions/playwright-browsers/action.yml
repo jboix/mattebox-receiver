@@ -2,7 +2,7 @@ name: Playwright browsers
 description: >-
   Restore the Playwright browsers and their system packages from the Actions
   cache, or download them on a miss. Keyed on the installed Playwright version
-  so a bump refreshes them.
+  and the runner's Ubuntu release, so a bump of either refreshes them.
 runs:
   using: composite
   steps:
@@ -13,12 +13,15 @@ runs:
         echo "playwright=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
         echo "os=${ImageOS}" >> "$GITHUB_OUTPUT"
         echo "image=${ImageVersion}" >> "$GITHUB_OUTPUT"
+    # Playwright downloads a build of each browser for the runner's Ubuntu
+    # release, linked against its libraries. The release is in the key, so a
+    # new image does not restore the builds of the one before.
     - name: Cache browsers
       id: cache
       uses: actions/cache@v4
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ steps.versions.outputs.playwright }}
+        key: playwright-${{ steps.versions.outputs.os }}-${{ steps.versions.outputs.playwright }}
     - name: Cache system packages
       id: apt-cache
       uses: actions/cache@v4
