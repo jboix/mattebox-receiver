@@ -1,0 +1,1 @@
+import{l as e,u as t}from"./index-Cf1vSe55.js";function n(){return[t(),e()]}export{n as t};

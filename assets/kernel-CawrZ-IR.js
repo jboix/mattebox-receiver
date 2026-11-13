@@ -1,0 +1,1 @@
+import{t as e}from"./define-DBOIOcJ2.js";var t=e(`kernel`,()=>[]);export{t as default};

@@ -1,1 +1,0 @@
-import{d as e}from"./index-BT8XVMsG.js";var t=e(`kernel`,()=>[]);export{t as default};
