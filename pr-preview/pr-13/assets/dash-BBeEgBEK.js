@@ -1,0 +1,1 @@
+import{d as e,n as t,t as n}from"./index-DiSQqQiv.js";var r=e(`dash`,()=>[...t(),...n()]);export{r as default};

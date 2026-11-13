@@ -1,0 +1,1 @@
+import{d as e}from"./index-DiSQqQiv.js";var t=e(`kernel`,()=>[]);export{t as default};
