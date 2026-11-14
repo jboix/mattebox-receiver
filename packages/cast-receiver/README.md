@@ -26,7 +26,11 @@ import { MatteboxPlayerElement } from '@mattebox/player';
 import full from 'mattebox/presets/full';
 
 const receiver = createReceiver({ preset: full });
-const player = new MatteboxPlayerElement({ handlers: receiver.handlers() });
+const player = new MatteboxPlayerElement({
+  handlers: receiver.handlers(),
+  // The markers, the poster and the chapters a mattebox sender sends.
+  connectors: receiver.connectors(),
+});
 document.body.append(player);
 receiver.start(player);
 ```
@@ -34,6 +38,7 @@ receiver.start(player);
 | The library does this                                                     | The library does not do this                                          |
 | ------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | It passes the sender's `LOAD` through your `resolve` and loads the player | It does not create or append any element                              |
+| It loads the sender's programme through your connector, or as it was sent | It does not read what an add-on of the sender's page sent             |
 | It reports the media status from the video and the engine                 | It does not know what a token is, or where a license comes from       |
 | It selects audio and text tracks under stable Cast ids                    | It does not bundle an engine preset. Your page imports one            |
 | It sends the player's errors to every sender                              | It does not load Google's framework. Your page loads it               |

@@ -63,17 +63,39 @@ receiver.start(document.querySelector("mattebox-player"));
 With an older player, create the player in script: importing the package
 registers the element before `define` can run.
 
+Give the element the receiver's connectors too. With them, the player
+applies what a `@mattebox/player-cast` sender sends with the URL: the
+markers, the poster, the chapters.
+
+```ts
+MatteboxPlayerElement.define({
+  handlers: receiver.handlers(),
+  connectors: receiver.connectors(),
+});
+```
+
+Your page can have connectors of its own, for your content API. Give them
+to `createReceiver`, not to `define()`. `receiver.connectors()` returns them
+with the library's:
+
+```ts
+const receiver = createReceiver({ preset: full, connectors: [yourConnector] });
+```
+
+[02 Loads](02-loads.md#the-programme) says which connector resolves a load.
+
 `createReceiver` takes these options:
 
-| Option     | What it does                                                                                                                                |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `preset`   | Sets the stages of the engine. You import the preset yourself. The library bundles no preset                                                |
-| `resolve`  | Converts the sender's request into what the player loads. The default is `defaultResolve`                                                   |
-| `stages`   | Adds stages to the engine. The library merges them with the preset's stages by name. A stage replaces the preset's stage with the same name |
-| `without`  | Lists the names of the preset stages that you want to leave out, such as `thumbnails`                                                       |
-| `config`   | Tunes the kernel of the engine. The default is the memory profile for the device                                                            |
-| `messages` | Lists your custom namespaces. Each namespace has its own handler                                                                            |
-| `debug`    | Turns on the Cast debug logger and its overlay. The default is false                                                                        |
+| Option       | What it does                                                                                                                                |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `preset`     | Sets the stages of the engine. You import the preset yourself. The library bundles no preset                                                |
+| `resolve`    | Converts the sender's request into what the player loads. The default is `defaultResolve`                                                   |
+| `connectors` | Your page's connectors, one per source type. The library resolves a sender's programme of one of these types through yours                  |
+| `stages`     | Adds stages to the engine. The library merges them with the preset's stages by name. A stage replaces the preset's stage with the same name |
+| `without`    | Lists the names of the preset stages that you want to leave out, such as `thumbnails`                                                       |
+| `config`     | Tunes the kernel of the engine. The default is the memory profile for the device                                                            |
+| `messages`   | Lists your custom namespaces. Each namespace has its own handler                                                                            |
+| `debug`      | Turns on the Cast debug logger and its overlay. The default is false                                                                        |
 
 ## The preset
 
@@ -115,9 +137,10 @@ as the preset's stage.
 | Member            | What it does                                                                                                             |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `handlers()`      | Returns the handlers for the player. The first is the mattebox handler with the preset. The second is the native handler |
+| `connectors()`    | Returns the connectors for the player: yours, then the library's, which resolves what the sender sent                    |
 | `start(player)`   | Binds the element and starts the framework's context with it. You can call it once per page                              |
 | `load(castLoad)`  | Loads media into the player the same way a `LOAD` message does. Use it when your page simulates a sender                 |
-| `stop()`          | Ends the session. The player returns to `mattebox-player:not([src])`                                                     |
+| `stop()`          | Ends the session. The player unloads, and it has no `src` and no `sources`                                               |
 | `state`           | Returns `idle`, `loading`, `ready` or `error`                                                                            |
 | `on('load', fn)`  | Calls `fn(load, resolved)` when a load is resolved. `load` is the sender's request. `resolved` is what the player loads  |
 | `on('idle', fn)`  | Calls `fn(reason)` when the receiver becomes idle. `reason` is `stopped`, `finished` or `error`                          |
@@ -142,15 +165,27 @@ receiver.on("load", ({ metadata }) => {
 });
 ```
 
-You can style the idle screen. The player has no `src` when nothing is
-loaded:
+You can style the idle screen. Keep the state on the player from the
+receiver's events:
+
+```ts
+receiver.on("load", () => player.classList.remove("idle"));
+receiver.on("idle", () => player.classList.add("idle"));
+```
 
 ```css
 /* The idle wallpaper: the moment with nothing loaded. */
-mattebox-player:not([src]) {
+mattebox-player.idle {
   background: url(wallpaper.jpg) center / cover;
 }
 ```
+
+- A page that gives the element no connector can use
+  `mattebox-player:not([src])`: every load sets `src` there.
+- A load through a connector sets `sources` and no `src`.
+- The receiver is also idle while the player shows a block or a
+  connector's error. The player has `blocked` or `error` then. Add
+  `<mbx-error-screen>` to show them.
 
 A television plays sound, so do not set `muted` on a device. A desktop
 browser only autoplays a muted video. If your page also runs on a desktop,

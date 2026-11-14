@@ -44,10 +44,18 @@ export interface Mounted {
   readonly player: MatteboxPlayerElement;
 }
 
-/** The page's three lines: a receiver, its chain given to the element, and the start over it. */
-export function mount(options: Partial<ReceiverOptions> = {}): Mounted {
+/**
+ * The page's three lines: a receiver, its chain given to the element, and
+ * the start over it. With `connectors`, the page also gives the element the
+ * receiver's connectors: its own, from the `connectors` option, and the
+ * library's.
+ */
+export function mount(options: Partial<ReceiverOptions> = {}, connectors = false): Mounted {
   const receiver = createReceiver({ preset: full, ...options });
-  const player = new MatteboxPlayerElement({ handlers: receiver.handlers() });
+  const player = new MatteboxPlayerElement({
+    handlers: receiver.handlers(),
+    ...(connectors ? { connectors: receiver.connectors() } : {}),
+  });
   // Muted, as the app's markup has it: a headless browser refuses to autoplay sound.
   player.setAttribute('muted', '');
   player.setAttribute('controls', 'none');

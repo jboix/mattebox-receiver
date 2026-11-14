@@ -68,7 +68,7 @@ A check or a reviewer enforces each of these rules:
    three are peer dependencies. Google's framework is a script that the page
    loads.
 3. **The element stays native.** You implement a Cast command as a call on
-   `player.video`.
+   `player.media`.
 4. **No side effects in the library.** Importing the library registers
    nothing.
 5. **Everything vendor-specific lives in the app.**

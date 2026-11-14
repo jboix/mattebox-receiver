@@ -10,7 +10,8 @@
  * another vendor replaces the table below and nothing else.
  */
 import type { CastLoad, Load } from '@mattebox/cast-receiver';
-import { defaultResolve } from '@mattebox/cast-receiver';
+import { defaultResolve, matteboxData } from '@mattebox/cast-receiver';
+import type { MatteboxPlayerElement } from '@mattebox/player';
 
 /** Adds to a URL the token its CDN asks for. */
 type Tokenize = (url: string, signal: AbortSignal) => Promise<string>;
@@ -27,17 +28,27 @@ const ISSUERS: Readonly<Record<string, (data: unknown) => Promise<Tokenize | nul
   },
 };
 
-export async function resolve(load: CastLoad): Promise<Load> {
-  const resolved = defaultResolve(load);
-  const custom = load.customData;
-  if (typeof custom !== 'object' || custom === null) return resolved;
-  const signal = AbortSignal.timeout(15_000);
-  let url = resolved.url;
-  for (const [key, issuer] of Object.entries(ISSUERS)) {
-    const data = (custom as Record<string, unknown>)[key];
-    if (data === undefined) continue;
-    const tokenize = await issuer(data);
-    if (tokenize !== null) url = await tokenize(url, signal);
-  }
-  return { ...resolved, url };
+/**
+ * The resolver runs before the player loads anything, so what a load needs
+ * first is fetched here: the ads module, for a load whose sender sent ads.
+ */
+export function resolver(player: MatteboxPlayerElement): (load: CastLoad) => Promise<Load> {
+  return async (load) => {
+    const resolved = defaultResolve(load);
+    if (matteboxData(load.customData).addons?.ads !== undefined) {
+      const { follow } = await import('./ads.js');
+      follow(player);
+    }
+    const custom = load.customData;
+    if (typeof custom !== 'object' || custom === null) return resolved;
+    const signal = AbortSignal.timeout(15_000);
+    let url = resolved.url;
+    for (const [key, issuer] of Object.entries(ISSUERS)) {
+      const data = (custom as Record<string, unknown>)[key];
+      if (data === undefined) continue;
+      const tokenize = await issuer(data);
+      if (tokenize !== null) url = await tokenize(url, signal);
+    }
+    return { ...resolved, url };
+  };
 }

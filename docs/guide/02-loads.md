@@ -36,6 +36,7 @@ interface Load {
   licenseUrls?: Record<string, string>;
   certificateUrl?: string;
   thumbnails?: string;
+  chapters?: string;
   requestHooks?: Array<
     (request: { url: string; headers: Record<string, string> }) => void
   >;
@@ -46,12 +47,13 @@ The library uses each member of the `Load` as follows:
 
 | Member           | What the library does with it                                                                              |
 | ---------------- | ---------------------------------------------------------------------------------------------------------- |
-| `url`            | Sets the element's `src`. The element loads again when you set `src` to the value it already has           |
-| `type`           | Sets the element's `type`. The element trusts `type` over the URL's extension                              |
-| `licenseUrl`     | Sets the element's `license-url`. The element gives it to `engine.drm.setLicenseUrl`                       |
+| `url`            | Is what plays, unless a connector of your page resolves the sender's programme                             |
+| `type`           | Is the source's type. The player trusts `type` over the URL's extension                                    |
+| `licenseUrl`     | Is the source's license server. The player gives it to `engine.drm.setLicenseUrl`                          |
 | `licenseUrls`    | Gives the engine one license server per key system, with `engine.drm.setLicenseUrls`. Engine sessions only |
-| `certificateUrl` | Sets the element's `certificate-url`, the FairPlay or Widevine service certificate                         |
+| `certificateUrl` | Is the FairPlay or Widevine service certificate of the source                                              |
 | `thumbnails`     | Sets the element's `thumbnails`. You need the `thumbnails` stage and `<mbx-seek-bar>`                      |
+| `chapters`       | Sets the element's `chapters`, the URL of a WebVTT chapters file                                           |
 | `requestHooks`   | Calls each hook for every request that the engine makes for this load. This includes the license request   |
 
 The default function is `defaultResolve`. It copies the request's `url` and
@@ -81,9 +83,71 @@ Every member is optional. `@mattebox/player-cast` fills in `licenseUrl`,
 converts `licenseHeaders` into a request hook. The hook adds the headers to
 the requests to the license servers and to no other request.
 
-The library reads nothing else from `customData`. The sender,
-`@mattebox/player-cast`, does not define a shape for `customData`. This
-library defines a shape for the `mattebox` key only.
+`@mattebox/player-cast` also sends the programme under the same key. The
+bridge reads these members, not `defaultResolve`:
+
+| Member        | What it is                                                                                    |
+| ------------- | --------------------------------------------------------------------------------------------- |
+| `programme`   | The connector the sender's programme came from: `{ type, id }`, or `{ type, data }`           |
+| `metadata`    | The title, the subtitle, the description, the image, the poster, the chapters and the markers |
+| `chapters`    | The URL of a chapters file, which `defaultResolve` copies to the `Load`                       |
+| `videoTracks` | The other versions of the picture, such as sign language                                      |
+| `date`        | The clock time a live viewer watches, in epoch seconds. Absent at the live edge               |
+| `addons`      | What each add-on of the sender's page sent, under its name                                    |
+
+The library reads nothing else from `customData`. This library defines a
+shape for the `mattebox` key only.
+
+## The programme
+
+The library loads the player one of three ways:
+
+| The page                                                            | The load                                              |
+| ------------------------------------------------------------------- | ----------------------------------------------------- |
+| Gave `createReceiver` a connector of the sender's `programme` type  | The sender's `programme`, through your connector      |
+| Gave the element `receiver.connectors()`, and has no such connector | What the sender sent, through the library's connector |
+| Never called `receiver.connectors()`                                | The `Load` alone, through the element's attributes    |
+
+- Your connector fetches the programme by its id. It gives its own URL,
+  token, metadata, markers and block. The sender's URL is not used.
+- The library's connector makes a programme of type `mattebox/cast`
+  (`CAST_CONNECTOR`). The player applies the sent markers, poster and
+  chapters as for any programme. `player.programme.data` is a
+  `CastProgramme`: the `source`, the `metadata` and the `addons` of the
+  sender's page.
+- The attributes are `src`, `type`, `license-url` and `certificate-url`.
+  The sent metadata and markers are not applied.
+- The library chooses before it loads, from the `connectors` option. Give
+  your connectors there: the library does not see a connector you give to
+  `define()` yourself.
+- A connector that fails is the answer. The `LOAD` fails with the
+  connector's error, and the player keeps the error.
+- A connector that blocks the programme fails the `LOAD` with the reason
+  `connector/BLOCKED`. The player keeps the block.
+
+The library reads no add-on section. Your page gives a section to its own
+add-on, at each session. For the ads of `@mattebox/player-ads`:
+
+```ts
+import { CAST_CONNECTOR } from "@mattebox/cast-receiver";
+import { ads, adsOf } from "@mattebox/player-ads";
+
+// Attach the add-on here, not in `define()`: its listener has to run before yours.
+ads().attach(player);
+// The add-on clears its schedule at each session. Yours is given after that.
+player.addEventListener("sourcechange", (event) => {
+  const programme = player.programme;
+  if (event.detail === null || programme?.type !== CAST_CONNECTOR) return;
+  const sent = programme.data.addons.ads;
+  for (const url of sent?.urls ?? []) void adsOf(player).load(url);
+  if (sent?.breaks) adsOf(player).schedule(sent.breaks);
+});
+```
+
+- A programme your own connector resolved has its own ads. The sent section
+  is for a programme made of what the sender sent.
+- HLS interstitials need the engine's `interstitials` stage. Pass it in the
+  receiver's `stages`.
 
 ## Token refresh
 
@@ -182,6 +246,10 @@ A load with a `streamType` of `LIVE` works the same way as any other load.
 The library ignores the sender's `currentTime`, and the stream starts at the
 live edge.
 
+A `@mattebox/player-cast` sender that plays behind the edge sends
+`customData.mattebox.date`. The library seeks to that clock time, through
+the engine's `pdt` namespace. A date outside the window stays at the edge.
+
 The status contains the seekable range. The library takes the range from the
 engine's availability window. When a sender seeks to the end of the range,
 the library calls `engine.live.seekToEdge()`.
@@ -207,7 +275,9 @@ When the player refuses a load, the library answers the `LOAD` message with
 `LOAD_FAILED`.
 
 After a fatal error, the receiver becomes idle, and the status says `IDLE`
-with the idle reason `ERROR`.
+with the idle reason `ERROR`. The player unloads, except after a connector's
+error or a block: the player keeps those, so an `<mbx-error-screen>` shows
+why nothing plays. The next load or `stop()` clears them.
 
 ## Custom messages
 

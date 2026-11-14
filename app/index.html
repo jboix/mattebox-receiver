@@ -11,9 +11,11 @@
 </head>
 <body>
   <!-- The reference integration. No buttons: nothing on the device is clickable. -->
-  <mattebox-player controls="custom" muted>
+  <mattebox-player class="idle" controls="custom" muted>
     <mbx-title></mbx-title>
     <mbx-spinner></mbx-spinner>
+    <!-- A programme that is blocked, or that the page's connector could not resolve. -->
+    <mbx-error-screen></mbx-error-screen>
     <mbx-control-bar>
       <mbx-current-time></mbx-current-time>
       <mbx-seek-bar></mbx-seek-bar>

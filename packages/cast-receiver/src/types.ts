@@ -5,7 +5,15 @@
  * package.
  */
 import type { MatteboxPlayerElement } from '@mattebox/player';
-import type { Handler, PlayerError } from '@mattebox/player-core';
+import type {
+  Connector,
+  ConnectorSource,
+  Handler,
+  PlayerError,
+  ProgrammeMetadata,
+  Source,
+  SourceVideoTrack,
+} from '@mattebox/player-core';
 import type { KernelConfig, Stage } from 'mattebox';
 // `Preset` is only reachable through a preset subpath. Any preset exports it.
 import type { Preset } from 'mattebox/presets/full';
@@ -60,11 +68,16 @@ export interface Load {
   readonly certificateUrl?: string;
   /** A WebVTT sprite-sheet track, the element's `thumbnails` attribute. */
   readonly thumbnails?: string;
+  /** A WebVTT chapters file, the element's `chapters` attribute. */
+  readonly chapters?: string;
   /** Seen by every request the engine makes, the license request included. */
   readonly requestHooks?: readonly RequestHook[];
 }
 
-/** The one convention the default resolver reads: `customData.mattebox`. Every member is optional. */
+/**
+ * The one convention the library reads: `customData.mattebox`, as
+ * `@mattebox/player-cast` writes it. Every member is optional.
+ */
 export interface MatteboxCustomData {
   readonly licenseUrl?: string;
   readonly licenseUrls?: Readonly<Record<string, string>>;
@@ -72,6 +85,31 @@ export interface MatteboxCustomData {
   /** Headers for every license request: those to `licenseUrl` and to each of `licenseUrls`. */
   readonly licenseHeaders?: Readonly<Record<string, string>>;
   readonly thumbnails?: string;
+  /** The connector the sender's programme came from: its type, with its id or its data. */
+  readonly programme?: ConnectorSource;
+  /** The title, the subtitle, the description, the image, the poster, the chapters and the markers. */
+  readonly metadata?: ProgrammeMetadata;
+  /** The URL of a chapters file. */
+  readonly chapters?: string;
+  /** The other versions of the picture, such as sign language. */
+  readonly videoTracks?: readonly SourceVideoTrack[];
+  /** The clock time a live viewer watches, in epoch seconds. Absent at the live edge. */
+  readonly date?: number;
+  /** What each add-on of the sender's page sent, under its name. The library reads none of it. */
+  readonly addons?: { readonly [name: string]: unknown };
+}
+
+/**
+ * The data of a `mattebox/cast` programme: what the sender sent, as the
+ * library's connector resolves it. A receiver page reads it from
+ * `player.programme.data`.
+ */
+export interface CastProgramme {
+  /** What plays: the resolved URL, with the sender's DRM servers and picture versions. */
+  readonly source: Source;
+  readonly metadata?: ProgrammeMetadata;
+  /** The add-on sections of the sender's page, for the page's own add-ons. */
+  readonly addons: { readonly [name: string]: unknown };
 }
 
 /** What eme-core calls when the license server answers 401 or 403. */
@@ -94,6 +132,14 @@ export interface ReceiverOptions {
    * smaller preset, and one that wants a stage off names it in `without`.
    */
   readonly preset: Preset;
+  /**
+   * The page's connectors, one per source type, such as `srgssr/urn`. A
+   * sender's programme of one of these types is resolved here by its id:
+   * the page's own token, metadata and block. Give them to the receiver,
+   * not to `define()`: `receiver.connectors()` returns them for it, and the
+   * receiver knows from them which programmes the page resolves itself.
+   */
+  readonly connectors?: readonly Connector[];
   /** Turns what the sender sent into what the player loads. Default: the passthrough of `defaultResolve`. */
   readonly resolve?: (load: CastLoad) => Load | Promise<Load>;
   /** Stages for the engine, merged by name over the preset's: a name the preset has replaces its instance, which is how a stage gets options. */
@@ -128,6 +174,15 @@ export interface Receiver {
    * the native handler.
    */
   handlers(): Handler[];
+  /**
+   * The connectors for `MatteboxPlayerElement.define`, beside the handlers:
+   * the page's own, from the `connectors` option, then the library's. The
+   * library's resolves a `mattebox/cast` programme: the sender's source and
+   * metadata, for a programme no connector of the page knows. A page that
+   * never calls this gets every load through the element's attributes, and
+   * the sent markers and metadata are not applied.
+   */
+  connectors(): Connector[];
   /**
    * Binds the page's element and starts the framework's context over it.
    * Once per page. On a page without the framework, a desktop browser, it

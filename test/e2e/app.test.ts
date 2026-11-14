@@ -68,8 +68,10 @@ describe('the receiver page', () => {
 
   it('?load drives the player through the bridge, natively for a WAV', async () => {
     await expect.poll(() => player().player?.session?.handler, { timeout: 15_000 }).toBe('native');
-    expect(player().hasAttribute('src')).toBe(true);
-    await expect.poll(() => player().video.paused).toBe(false);
+    // Through the receiver's connector: a programme of what the sender sent, and no `src`.
+    expect(player().programme?.type).toBe('mattebox/cast');
+    expect(player().classList.contains('idle')).toBe(false);
+    await expect.poll(() => player().media.paused).toBe(false);
   });
 
   it("writes the title's three attributes from the load's metadata", () => {
@@ -84,10 +86,12 @@ describe('the receiver page', () => {
   });
 
   it('shows the wallpaper once nothing is loaded, and hides the video and the bar under it', async () => {
-    await expect.poll(() => player().hasAttribute('src'), { timeout: 10_000 }).toBe(false);
-    expect(player().matches('mattebox-player:not([src])')).toBe(true);
+    await expect.poll(() => player().classList.contains('idle'), { timeout: 10_000 }).toBe(true);
+    expect(player().matches('mattebox-player.idle')).toBe(true);
     // Hidden with its box kept: the engine sizes the first rendition to it.
-    expect(getComputedStyle(player().video).visibility).toBe('hidden');
+    expect(getComputedStyle(player().querySelector('video') as HTMLVideoElement).visibility).toBe(
+      'hidden',
+    );
     const bar = player().querySelector('mbx-control-bar');
     expect(bar === null ? 'hidden' : getComputedStyle(bar).visibility).toBe('hidden');
     expect(getComputedStyle(player()).backgroundImage).toContain('gradient');

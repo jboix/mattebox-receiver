@@ -2,7 +2,12 @@
  * The default resolver: a passthrough with one convention,
  * `customData.mattebox`. Nothing else is read from `customData`. A page
  * whose sender puts a token there resolves it in its own `resolve`.
+ *
+ * The resolver gives the URL and what goes with it. The programme, its
+ * metadata and the live date are read by the bridge, from the same
+ * convention.
  */
+import type { SourceVideoTrack } from '@mattebox/player-core';
 import type { CastLoad, Load, MatteboxCustomData, RequestHook } from './types.js';
 
 function record(value: unknown): Record<string, unknown> | null {
@@ -13,20 +18,41 @@ function record(value: unknown): Record<string, unknown> | null {
 export function matteboxData(customData: unknown): MatteboxCustomData {
   const own = record(record(customData)?.mattebox);
   if (own === null) return {};
-  const out: {
-    licenseUrl?: string;
-    licenseUrls?: Record<string, string>;
-    certificateUrl?: string;
-    licenseHeaders?: Record<string, string>;
-    thumbnails?: string;
-  } = {};
+  const out: { -readonly [Name in keyof MatteboxCustomData]: MatteboxCustomData[Name] } = {};
   if (typeof own.licenseUrl === 'string') out.licenseUrl = own.licenseUrl;
   if (typeof own.certificateUrl === 'string') out.certificateUrl = own.certificateUrl;
   if (typeof own.thumbnails === 'string') out.thumbnails = own.thumbnails;
+  if (typeof own.chapters === 'string') out.chapters = own.chapters;
+  if (typeof own.date === 'number' && Number.isFinite(own.date)) out.date = own.date;
   const urls = strings(own.licenseUrls);
   if (urls !== null) out.licenseUrls = urls;
   const headers = strings(own.licenseHeaders);
   if (headers !== null) out.licenseHeaders = headers;
+  const programme = record(own.programme);
+  // A connector source names its programme by id, or carries its data.
+  if (
+    programme !== null &&
+    typeof programme.type === 'string' &&
+    (typeof programme.id === 'string' || programme.data !== undefined)
+  ) {
+    out.programme = {
+      type: programme.type,
+      ...(typeof programme.id === 'string' ? { id: programme.id } : {}),
+      ...(programme.data === undefined ? {} : { data: programme.data }),
+    };
+  }
+  // The player validates the members it applies: the markers, the chapters.
+  const metadata = record(own.metadata);
+  if (metadata !== null) out.metadata = metadata;
+  if (Array.isArray(own.videoTracks)) {
+    const versions = own.videoTracks.filter(
+      (track): track is SourceVideoTrack =>
+        typeof record(track)?.url === 'string' && typeof record(track)?.kind === 'string',
+    );
+    if (versions.length > 0) out.videoTracks = versions;
+  }
+  const addons = record(own.addons);
+  if (addons !== null) out.addons = addons;
   return out;
 }
 
@@ -64,7 +90,7 @@ export function headersFor(
 
 export function defaultResolve(load: CastLoad): Load {
   const data = matteboxData(load.customData);
-  const { licenseUrl, licenseUrls, certificateUrl, licenseHeaders, thumbnails } = data;
+  const { licenseUrl, licenseUrls, certificateUrl, licenseHeaders, thumbnails, chapters } = data;
   const servers = licenseServers(data);
   const hooked =
     servers.length > 0 && licenseHeaders !== undefined ? [headersFor(servers, licenseHeaders)] : [];
@@ -75,6 +101,7 @@ export function defaultResolve(load: CastLoad): Load {
     ...(licenseUrls === undefined ? {} : { licenseUrls }),
     ...(certificateUrl === undefined ? {} : { certificateUrl }),
     ...(thumbnails === undefined ? {} : { thumbnails }),
+    ...(chapters === undefined ? {} : { chapters }),
     ...(hooked.length === 0 ? {} : { requestHooks: hooked }),
   };
 }

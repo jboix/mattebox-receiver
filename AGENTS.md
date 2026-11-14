@@ -36,7 +36,7 @@ an issue on the engine's or the player's repository.
    dependency to work around a problem.
 
 3. **The element stays native.** Never forward or wrap an `HTMLMediaElement`
-   member for the page. A Cast command is a call on `player.video`, and the
+   member for the page. A Cast command is a call on `player.media`, and the
    status is read from the video and the engine, never from a copy. The
    stand-in the framework holds (`path.ts`) keeps the framework's own load off
    the video and nothing else.

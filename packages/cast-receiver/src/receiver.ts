@@ -3,10 +3,12 @@
  * chain the page gives to `MatteboxPlayerElement.define`, and once started
  * it stands between the framework's messages and the page's element.
  */
-import type { Handler, PlayerError } from '@mattebox/player-core';
+import type { Connector, Handler, PlayerError } from '@mattebox/player-core';
+import { Blocked } from '@mattebox/player-core';
 import type { Bridge } from './bridge.js';
 import { createBridge, LoadFailed, Superseded } from './bridge.js';
 import * as commands from './commands.js';
+import { castConnector } from './connector.js';
 import type { CastReceiverContext, ErrorData, Interceptor, LoadRequestData } from './framework.js';
 import {
   COMMANDS,
@@ -40,6 +42,9 @@ import type {
 /** The engine's events that move the track list or the selection. */
 const TRACK_EVENTS = ['tracks:changed', 'tracks:selected'];
 
+/** The reason a sender reads for a programme its connector blocked. */
+const BLOCKED = 'connector/BLOCKED';
+
 type Listener = (...args: never[]) => void;
 
 /** The reason a sender reads: the player's category and code. */
@@ -68,6 +73,8 @@ export function createReceiver(options: ReceiverOptions): Receiver {
   /** The fatal error that last sent the receiver idle, and how many times it went idle. */
   let failure: PlayerError | null = null;
   let idles = 0;
+  /** The player shows why nothing plays: a block, or a connector's error. Idle, with the screen kept. */
+  let shown = false;
 
   function emit(event: string, ...args: unknown[]): void {
     for (const fn of [...(listeners[event] ?? [])]) (fn as (...a: unknown[]) => void)(...args);
@@ -82,6 +89,10 @@ export function createReceiver(options: ReceiverOptions): Receiver {
     () => player,
   );
 
+  /** The page's own connectors, and whether it asked for the list it gives the element. */
+  const own = options.connectors ?? [];
+  let asked = false;
+
   const bridge: Bridge = createBridge(
     options.resolve ?? defaultResolve,
     router,
@@ -89,6 +100,7 @@ export function createReceiver(options: ReceiverOptions): Receiver {
       license.loaded(resolved);
       emit('load', load, resolved);
     },
+    () => (asked ? own.map((connector) => connector.type) : null),
   );
 
   /**
@@ -147,20 +159,27 @@ export function createReceiver(options: ReceiverOptions): Receiver {
     });
   }
 
-  /** `bySender`: a sender's STOP, which the framework ends its own session on. Anything else has to tell it. */
-  function toIdle(why: IdleReason, bySender = false): void {
-    if (player === null || (state === 'idle' && current === null)) return;
+  /**
+   * `bySender`: a sender's STOP, which the framework ends its own session on.
+   * Anything else has to tell it. `keep`: nothing plays, and the player
+   * shows why, so the player keeps what it holds until the next load or stop.
+   */
+  function toIdle(why: IdleReason, bySender = false, keep = false): void {
+    if (player === null || (state === 'idle' && current === null && !shown)) return;
     idles += 1;
     idleReason = why;
     // The framework holds a session of its own only once a load completed.
     const held = current !== null;
     current = null;
-    bridge.unload(player);
-    // Wanted: removing `src` to unload, as the element's guide says. In
-    // @mattebox/player 0.5.0 the element forgets the session and leaves the
-    // core playing it. Had to: unload the core, which is public. The surface
-    // that would make it one call: the element unloading on a removed `src`.
-    void player.player?.unload();
+    shown = keep;
+    if (!keep) {
+      bridge.unload(player);
+      // Wanted: removing `src` to unload, as the element's guide says. In
+      // @mattebox/player 0.5.0 the element forgets the session and leaves the
+      // core playing it. Had to: unload the core, which is public. The surface
+      // that would make it one call: the element unloading on a removed `src`.
+      void player.player?.unload();
+    }
     state = 'idle';
     // The framework's own session ends too, and its status goes out with
     // the reason written over it.
@@ -181,7 +200,8 @@ export function createReceiver(options: ReceiverOptions): Receiver {
         manager.sendError(sender.id, 0, 'ERROR', reason(error), data);
       }
     }
-    if (error.fatal) toIdle('error');
+    // A connector's error is the answer about the programme, and the player's error screen says it.
+    if (error.fatal) toIdle('error', false, error.category === 'connector');
   }
 
   /** The engine's track events, for the session the player holds now. */
@@ -197,6 +217,7 @@ export function createReceiver(options: ReceiverOptions): Receiver {
     if (player === null) throw new Error('mattebox receiver: start() comes before load()');
     state = 'loading';
     idleReason = null;
+    shown = false;
     const before = idles;
     try {
       const resolved = await bridge.load(player, request);
@@ -211,9 +232,12 @@ export function createReceiver(options: ReceiverOptions): Receiver {
       watchEngine();
       return resolved;
     } catch (cause) {
+      // A blocked programme loaded nothing and reported no error. The player
+      // shows the block, and the session the framework held is over.
+      if (cause instanceof Blocked) toIdle('error', false, true);
       // A refused load already came through the player's `error` event.
       // One that lost to a later load changes nothing: the later one decides.
-      if (!(cause instanceof Superseded) && !(cause instanceof LoadFailed)) {
+      else if (!(cause instanceof Superseded) && !(cause instanceof LoadFailed)) {
         state = 'idle';
       }
       throw cause;
@@ -227,12 +251,12 @@ export function createReceiver(options: ReceiverOptions): Receiver {
   function bind(element: ReceiverPlayer): void {
     player = element;
     element.addEventListener('error', (event) => onError(event.detail));
-    element.video.addEventListener('ended', () => {
+    element.media.addEventListener('ended', () => {
       if (current !== null) toIdle('finished');
     });
     // A sender's track the page put on the video, or a selection made there.
-    element.video.textTracks.addEventListener('addtrack', () => path?.changed());
-    element.video.textTracks.addEventListener('change', () => path?.changed());
+    element.media.textTracks.addEventListener('addtrack', () => path?.changed());
+    element.media.textTracks.addEventListener('change', () => path?.changed());
   }
 
   function start(element: ReceiverPlayer): void {
@@ -242,7 +266,7 @@ export function createReceiver(options: ReceiverOptions): Receiver {
     if (context === null) return;
 
     const manager = context.getPlayerManager();
-    path = installPath(manager, element.video, {
+    path = installPath(manager, element.media, {
       seek: (request) => commands.seek(element, request),
       setPlaybackRate: (request) => commands.setPlaybackRate(element, request),
       editTracks: (request) =>
@@ -265,6 +289,7 @@ export function createReceiver(options: ReceiverOptions): Receiver {
         const failed: ErrorData = {
           type: cause instanceof Superseded ? 'LOAD_CANCELLED' : 'LOAD_FAILED',
           ...(cause instanceof LoadFailed ? { reason: reason(cause.detail) } : {}),
+          ...(cause instanceof Blocked ? { reason: BLOCKED } : {}),
           ...(request.requestId === undefined ? {} : { requestId: request.requestId }),
         };
         return failed;
@@ -311,6 +336,10 @@ export function createReceiver(options: ReceiverOptions): Receiver {
 
   return {
     handlers,
+    connectors(): Connector[] {
+      asked = true;
+      return [...own, castConnector()];
+    },
     start,
     load,
     stop,

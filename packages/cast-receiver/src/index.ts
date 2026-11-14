@@ -6,6 +6,7 @@
  */
 
 export { LoadFailed, Superseded } from './bridge.js';
+export { CAST_CONNECTOR } from './connector.js';
 export { LICENSE_NAMESPACE } from './license.js';
 export { createReceiver } from './receiver.js';
 export { defaultResolve, headersFor, licenseServers, matteboxData } from './resolve.js';

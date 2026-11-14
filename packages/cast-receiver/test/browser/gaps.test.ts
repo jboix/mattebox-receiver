@@ -29,7 +29,7 @@ describe('gaps in @mattebox/player, as released', () => {
     await wait(100);
     // The guide says removing `src` unloads. The session is still there.
     expect(player.player?.session).not.toBeNull();
-    expect(player.video.getAttribute('src')).not.toBeNull();
+    expect(player.media.getAttribute('src')).not.toBeNull();
   });
 
   it('the bar wakes on a pause, and not on a seek that no pointer or key made', async () => {
@@ -41,16 +41,16 @@ describe('gaps in @mattebox/player, as released', () => {
     player.setAttribute('src', silence(4));
     document.body.append(player);
     await expect.poll(() => player.player?.session?.handler).toBe('native');
-    await player.video.play();
+    await player.media.play();
     await expect.poll(() => player.hasAttribute('idle'), { timeout: 3000 }).toBe(true);
 
     // A sender's seek: the bar stays hidden, so the viewer sees no position.
-    player.video.currentTime = 2;
+    player.media.currentTime = 2;
     await wait(150);
     expect(player.hasAttribute('idle')).toBe(true);
 
     // A sender's pause does wake it: the bar never hides over a paused video.
-    player.video.pause();
+    player.media.pause();
     await wait(150);
     expect(player.hasAttribute('idle')).toBe(false);
   });

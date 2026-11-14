@@ -83,7 +83,7 @@ export function readTracks(
     engine === null
       ? null
       : engine.tracks.available.filter((track) => engine.tracks.selectable(track.id)),
-    textTracks(player.video),
+    textTracks(player.media),
   );
   const active: number[] = [];
   const audio = engine?.tracks.active('audio') ?? null;
@@ -96,7 +96,7 @@ export function readTracks(
     const id = ids.idOf({ origin: 'engine', contentType: 'text', trackId: text.id });
     if (id !== null) active.push(id);
   }
-  for (const track of Array.from(player.video.textTracks)) {
+  for (const track of Array.from(player.media.textTracks)) {
     if (track.mode !== 'showing') continue;
     const id = ids.idOf({
       origin: 'video',
@@ -129,7 +129,7 @@ export function writeStatus(
   player: ReceiverPlayer,
   context: StatusContext,
 ): void {
-  const video = player.video;
+  const video = player.media;
   const engine = player.engine;
   const loaded = context.load !== null && player.player?.session != null;
   const state = playerState({

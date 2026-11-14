@@ -59,7 +59,11 @@ import { MatteboxPlayerElement } from "@mattebox/player";
 import full from "mattebox/presets/full";
 
 const receiver = createReceiver({ preset: full });
-const player = new MatteboxPlayerElement({ handlers: receiver.handlers() });
+const player = new MatteboxPlayerElement({
+  handlers: receiver.handlers(),
+  // The markers, the poster and the chapters a mattebox sender sends.
+  connectors: receiver.connectors(),
+});
 document.body.append(player);
 receiver.start(player);
 ```

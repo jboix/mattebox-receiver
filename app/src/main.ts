@@ -11,6 +11,7 @@
 import '@mattebox/player/elements/control-bar';
 import '@mattebox/player/elements/current-time';
 import '@mattebox/player/elements/duration';
+import '@mattebox/player/elements/error-screen';
 import '@mattebox/player/elements/live-button';
 import '@mattebox/player/elements/seek-bar';
 import '@mattebox/player/elements/spinner';
@@ -20,7 +21,7 @@ import { createReceiver } from '@mattebox/cast-receiver';
 import { MatteboxPlayerElement } from '@mattebox/player/element';
 import full from 'mattebox/presets/full';
 import logoUrl from '../../docs/logo.svg';
-import { resolve } from './resolve.js';
+import { resolver } from './resolve.js';
 
 const query = new URLSearchParams(location.search);
 const debug = query.has('debug');
@@ -90,20 +91,32 @@ async function main(): Promise<void> {
   // The `full` preset: every protocol and tier, with `thumbnails`.
   // A page that wants fewer bytes passes a smaller preset, and one that
   // wants a stage off names it in `without`.
-  const receiver = createReceiver({ preset: full, resolve, debug });
+  const receiver = createReceiver({ preset: full, resolve: resolver(player), debug });
   // The player is in the markup, with its controls. `define` gives it the
   // receiver's chain: from player 0.9 the call reaches a player already in
-  // the page, as long as it has loaded nothing yet.
-  MatteboxPlayerElement.define({ handlers: receiver.handlers() });
+  // the page, as long as it has loaded nothing yet. The receiver's
+  // connector makes a programme of what the sender sent, so the player
+  // applies the sent markers, poster and chapters. A page with a content
+  // API gives its own connectors to `createReceiver`, and resolves the
+  // sender's id itself.
+  MatteboxPlayerElement.define({
+    handlers: receiver.handlers(),
+    connectors: receiver.connectors(),
+  });
 
   // A television plays sound. The markup says `muted` for the desktop, where
   // a browser refuses to autoplay anything else.
   const device = /CrKey\//.test(navigator.userAgent);
   if (device) player.removeAttribute('muted');
 
+  // The wallpaper shows while nothing is loaded. A load through a connector
+  // sets no `src` on the player, so the page keeps the state itself.
+  receiver.on('idle', () => player.classList.add('idle'));
+
   // The title's three attributes, from what the sender sent.
   const title = player.querySelector('mbx-title');
   receiver.on('load', ({ metadata }) => {
+    player.classList.remove('idle');
     title?.setAttribute('heading', metadata.title ?? '');
     title?.setAttribute('subheading', metadata.subtitle ?? '');
     const artwork = metadata.images[0];

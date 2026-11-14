@@ -104,8 +104,8 @@ describe('LOAD', () => {
   it('plays on autoplay and starts where the sender was', async () => {
     const { player } = mount();
     await fake.send('LOAD', loadMessage(silence(4), { autoplay: true, currentTime: 2 }));
-    await expect.poll(() => player.video.paused).toBe(false);
-    await expect.poll(() => player.video.currentTime).toBeGreaterThanOrEqual(2);
+    await expect.poll(() => player.media.paused).toBe(false);
+    await expect.poll(() => player.media.currentTime).toBeGreaterThanOrEqual(2);
     await expect.poll(() => last().playerState).toBe('PLAYING');
     expect(last().media?.duration).toBeCloseTo(4, 1);
   });
@@ -175,7 +175,7 @@ describe('LOAD', () => {
 describe('the commands', () => {
   it('are calls on the video, each answered with a status', async () => {
     const { player } = mount();
-    const video = player.video;
+    const video = player.media;
     await fake.send('LOAD', loadMessage(silence(4)));
 
     await fake.send('PLAY', { requestId: 2 });
@@ -380,7 +380,7 @@ describe("a sender's text track on a native session", () => {
       track.label = 'Català';
       track.srclang = 'ca';
       track.src = fixture('subs-ca.vtt');
-      player.video.append(track);
+      player.media.append(track);
     });
     await fake.send(
       'LOAD',
@@ -400,14 +400,14 @@ describe("a sender's text track on a native session", () => {
       }),
     );
     await fake.send('EDIT_TRACKS_INFO', { requestId: 2, activeTrackIds: [4] });
-    expect(player.video.textTracks[0]?.mode).toBe('showing');
+    expect(player.media.textTracks[0]?.mode).toBe('showing');
     await expect.poll(() => last().activeTrackIds).toEqual([4]);
 
     await fake.send('EDIT_TRACKS_INFO', { requestId: 3, activeTrackIds: [] });
-    expect(player.video.textTracks[0]?.mode).toBe('disabled');
+    expect(player.media.textTracks[0]?.mode).toBe('disabled');
 
     await fake.send('EDIT_TRACKS_INFO', { requestId: 4, language: 'ca-ES' });
-    expect(player.video.textTracks[0]?.mode).toBe('showing');
+    expect(player.media.textTracks[0]?.mode).toBe('showing');
   });
 });
 
@@ -483,8 +483,9 @@ describe('license token refresh', () => {
 describe("the framework's stand-in", () => {
   it('keeps the load the framework makes off the video, and tells it the load events again', async () => {
     const { player } = mount();
-    const video = player.video;
-    expect(fake.started[0]?.mediaElement).not.toBe(video);
+    const video = player.media;
+    // Compared by identity: both are proxies, and a matcher that inspects a node refuses one.
+    expect(fake.started[0]?.mediaElement === video).toBe(false);
 
     const url = silence(2);
     let emptied = 0;
@@ -526,11 +527,11 @@ describe("the framework's stand-in", () => {
   it("drops the framework's currentTime: the start is the engine's, and a seek is the library's", async () => {
     const { player } = mount();
     await fake.send('LOAD', loadMessage(silence(4)));
-    player.video.currentTime = 2;
+    player.media.currentTime = 2;
     const held = fake.started[0]?.mediaElement as HTMLMediaElement;
     // The write the framework ends its load with, of zero when the request names no time.
     held.currentTime = 0;
-    expect(player.video.currentTime).toBe(2);
+    expect(player.media.currentTime).toBe(2);
     // The read is still the video's.
     expect(held.currentTime).toBe(2);
   });
@@ -539,13 +540,13 @@ describe("the framework's stand-in", () => {
     const { player } = mount();
     await fake.send('LOAD', loadMessage(silence(4)));
     await fake.send('PLAY', { requestId: 2 });
-    await expect.poll(() => player.video.paused).toBe(false);
+    await expect.poll(() => player.media.paused).toBe(false);
     await fake.send('SEEK', { requestId: 3, currentTime: 3 });
-    await expect.poll(() => player.video.currentTime).toBeGreaterThanOrEqual(3);
+    await expect.poll(() => player.media.currentTime).toBeGreaterThanOrEqual(3);
     const writable = volumeWritable();
     await fake.send('SET_VOLUME', { requestId: 4, volume: { level: 0.5, muted: false } });
-    expect(player.video.muted).toBe(false);
-    if (writable) expect(player.video.volume).toBeCloseTo(0.5, 3);
+    expect(player.media.muted).toBe(false);
+    if (writable) expect(player.media.volume).toBeCloseTo(0.5, 3);
     expect(fake.dropped).toEqual([]);
   });
 

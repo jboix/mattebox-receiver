@@ -33,7 +33,7 @@ describe('without the framework', () => {
     expect(resolved.url).toBe(url);
     expect(titles).toEqual(['Simulated']);
     expect(receiver.state).toBe('ready');
-    await expect.poll(() => player.video.paused).toBe(false);
+    await expect.poll(() => player.media.paused).toBe(false);
 
     receiver.stop();
     expect(receiver.state).toBe('idle');

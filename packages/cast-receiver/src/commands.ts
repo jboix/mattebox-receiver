@@ -17,11 +17,11 @@ const EDGE_TOLERANCE = 1;
 
 export function play(player: ReceiverPlayer): void {
   // A rejected play is the autoplay policy or a load that lost; the status says which state holds.
-  player.video.play().catch(() => undefined);
+  player.media.play().catch(() => undefined);
 }
 
 export function seek(player: ReceiverPlayer, request: SeekRequestData): void {
-  const video = player.video;
+  const video = player.media;
   const engine = player.engine;
   const target =
     typeof request.currentTime === 'number'
@@ -38,11 +38,11 @@ export function seek(player: ReceiverPlayer, request: SeekRequestData): void {
     else video.currentTime = range === null ? target : Math.max(range.start, target);
   }
   if (request.resumeState === 'PLAYBACK_START') play(player);
-  else if (request.resumeState === 'PLAYBACK_PAUSE') player.video.pause();
+  else if (request.resumeState === 'PLAYBACK_PAUSE') player.media.pause();
 }
 
 export function setPlaybackRate(player: ReceiverPlayer, request: PlaybackRateRequestData): void {
-  const video = player.video;
+  const video = player.media;
   if (typeof request.playbackRate === 'number' && request.playbackRate > 0) {
     video.playbackRate = request.playbackRate;
   } else if (typeof request.relativePlaybackRate === 'number' && request.relativePlaybackRate > 0) {
@@ -114,7 +114,7 @@ function showText(player: ReceiverPlayer, text: TrackTarget): void {
     return;
   }
   textOff(player, text);
-  for (const track of Array.from(player.video.textTracks)) {
+  for (const track of Array.from(player.media.textTracks)) {
     if (matches(track, text)) track.mode = 'showing';
   }
 }
@@ -123,7 +123,7 @@ function showText(player: ReceiverPlayer, text: TrackTarget): void {
 function textOff(player: ReceiverPlayer, keep: TrackTarget | null): void {
   const engine = player.engine;
   if (engine !== null && engine.tracks.active('text') !== null) engine.tracks.deselect('text');
-  for (const track of Array.from(player.video.textTracks)) {
+  for (const track of Array.from(player.media.textTracks)) {
     if (track.kind !== 'subtitles' && track.kind !== 'captions') continue;
     if (keep !== null && matches(track, keep)) continue;
     if (track.mode === 'showing') track.mode = 'disabled';

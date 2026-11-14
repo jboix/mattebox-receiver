@@ -24,28 +24,29 @@ the request to the page, and the page returns a source.
 
 ## Rules
 
-1. **No DOM.** The library starts over one element. It reads and writes that element only through the public surface of the element: the attributes, `video`, `player`, `engine`, and the two events. The library creates no element and appends nothing.
-2. **The element stays native.** The library applies a Cast command as a call on `player.video`. The library reads the status from the video and the engine. It never reads the status from a copy.
+1. **No DOM.** The library starts over one element. It reads and writes that element only through the public surface of the element: the attributes, `sources`, `media`, `programme`, `player`, `engine`, and its events. The library creates no element and appends nothing.
+2. **The element stays native.** The library applies a Cast command as a call on `player.media`. The library reads the status from the video and the engine. It never reads the status from a copy.
 3. **The framework is a script the page loads.** The framework is never a dependency. The library declares the types of the part that it uses in `framework.ts`.
 4. **No plugin API, no registry, no base class.** The library has one call, `createReceiver`, and this call takes hooks.
 5. **Neither the engine nor the player is fixed from here.** When a surface is missing, you open an issue on the repository of the engine or the player. You also write a comment at the place where the receiver works around the missing surface.
 
 ## The library
 
-| Module         | Is                                                                                                                            |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `types.ts`     | It declares the public types: the options, `CastLoad`, `Load` and `Receiver`                                                  |
-| `framework.ts` | It declares the types of the part of the receiver framework that the library uses. It has the two accessors for `window.cast` |
-| `load.ts`      | It converts a `LOAD` request to a `CastLoad`. It is pure                                                                      |
-| `resolve.ts`   | It contains the default resolver. The resolver reads one convention, `customData.mattebox`. It is pure                        |
-| `tracks.ts`    | It assigns the Cast track ids, one time per load. It is pure                                                                  |
-| `profile.ts`   | It selects the memory profile for the device. It is pure                                                                      |
-| `handlers.ts`  | It builds the handler chain for `MatteboxPlayerElement.define`. It has the one request hook, which follows the current load   |
-| `status.ts`    | It computes the media status from reads of the video and the engine                                                           |
-| `commands.ts`  | It applies the commands that the library owns: seek, playback rate and track selection                                        |
-| `bridge.ts`    | It takes a `CastLoad` and controls the player through the attributes of the element. A message and a simulation both use it   |
-| `path.ts`      | It contains the status path. It decides what the framework receives and which messages the library answers                    |
-| `receiver.ts`  | It contains `createReceiver`. It holds the state and the events, and it connects the other modules                            |
+| Module         | Is                                                                                                                                                          |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `types.ts`     | It declares the public types: the options, `CastLoad`, `Load` and `Receiver`                                                                                |
+| `framework.ts` | It declares the types of the part of the receiver framework that the library uses. It has the two accessors for `window.cast`                               |
+| `load.ts`      | It converts a `LOAD` request to a `CastLoad`. It is pure                                                                                                    |
+| `resolve.ts`   | It contains the default resolver. The resolver reads one convention, `customData.mattebox`. It is pure                                                      |
+| `tracks.ts`    | It assigns the Cast track ids, one time per load. It is pure                                                                                                |
+| `profile.ts`   | It selects the memory profile for the device. It is pure                                                                                                    |
+| `handlers.ts`  | It builds the handler chain for `MatteboxPlayerElement.define`. It has the one request hook, which follows the current load                                 |
+| `status.ts`    | It computes the media status from reads of the video and the engine                                                                                         |
+| `commands.ts`  | It applies the commands that the library owns: seek, playback rate and track selection                                                                      |
+| `connector.ts` | It contains the library's connector, `mattebox/cast`. It resolves what the sender sent as a programme. It is pure                                           |
+| `bridge.ts`    | It takes a `CastLoad` and loads the player through a connector or the attributes, chosen from the page's connectors. A message and a simulation both use it |
+| `path.ts`      | It contains the status path. It decides what the framework receives and which messages the library answers                                                  |
+| `receiver.ts`  | It contains `createReceiver`. It holds the state and the events, and it connects the other modules                                                          |
 
 ## The status path
 

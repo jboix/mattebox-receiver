@@ -29,12 +29,13 @@ mattebox-player {
 }
 
 /* The idle wallpaper: the moment with nothing loaded. */
-mattebox-player:not([src]) {
+mattebox-player.idle {
   background:
     radial-gradient(90vh 70vh at 95% -10%, rgba(224, 84, 60, 0.16), transparent 62%), #141417;
 }
 
-mattebox-player:not([src])::after {
+/* Not over a block or an error, which the player keeps on screen while idle. */
+mattebox-player.idle:not([blocked]):not([error])::after {
   content: "Mattebox · ready to cast";
   position: absolute;
   left: var(--tv-safe);
@@ -99,9 +100,19 @@ mbx-spinner {
   transform: scale(2);
 }
 
+/* Read from the sofa, and nothing to press: a television has no pointer for the retry. */
+mbx-error-screen {
+  font-size: 4.4vh;
+}
+
+mbx-error-screen::part(retry),
+mbx-error-screen::part(diagnostics) {
+  display: none;
+}
+
 /* Nothing but the wallpaper while nothing is loaded. After the rules above: it has to win over them. */
-mattebox-player:not([src]) mbx-title,
-mattebox-player:not([src]) mbx-spinner {
+mattebox-player.idle mbx-title,
+mattebox-player.idle mbx-spinner {
   display: none;
 }
 
@@ -112,8 +123,8 @@ mattebox-player:not([src]) mbx-spinner {
  * title measures the bar's height when the player is sized, and not again
  * when the bar appears.
  */
-mattebox-player:not([src]) > video,
-mattebox-player:not([src]) mbx-control-bar {
+mattebox-player.idle > video,
+mattebox-player.idle mbx-control-bar {
   visibility: hidden;
 }
 

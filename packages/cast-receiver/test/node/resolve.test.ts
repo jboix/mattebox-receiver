@@ -106,3 +106,45 @@ describe('DRM servers in customData.mattebox', () => {
     expect(to('https://cdn.example/master.m3u8')).toEqual({});
   });
 });
+
+describe('the members a mattebox sender adds', () => {
+  it('passes the chapters file through the default resolver', () => {
+    const resolved = defaultResolve(load({ mattebox: { chapters: 'https://cdn.example/c.vtt' } }));
+    expect(resolved.chapters).toBe('https://cdn.example/c.vtt');
+  });
+
+  it('reads the programme, the metadata, the versions, the date and the add-on sections', () => {
+    const metadata = { title: 'Title', markers: [{ start: 1, end: 2, kind: 'blocked' }] };
+    const sign = { url: 'https://cdn.example/sign.m3u8', kind: 'sign' };
+    expect(
+      matteboxData({
+        mattebox: {
+          programme: { type: 'srgssr/urn', id: 'urn:rts:video:1' },
+          metadata,
+          videoTracks: [sign, { kind: 'sign' }, 'nothing'],
+          date: 1763100000,
+          addons: { ads: { urls: ['https://ads.example/vmap.xml'] } },
+        },
+      }),
+    ).toEqual({
+      programme: { type: 'srgssr/urn', id: 'urn:rts:video:1' },
+      metadata,
+      videoTracks: [sign],
+      date: 1763100000,
+      addons: { ads: { urls: ['https://ads.example/vmap.xml'] } },
+    });
+  });
+
+  it('keeps the data of a programme sent without an id', () => {
+    const data = matteboxData({ mattebox: { programme: { type: 'demo/data', data: { a: 1 } } } });
+    expect(data.programme).toEqual({ type: 'demo/data', data: { a: 1 } });
+  });
+
+  it('drops a programme without a type, or with neither id nor data, and a date that is no number', () => {
+    expect(matteboxData({ mattebox: { programme: { id: '1' }, date: '12' } })).toEqual({});
+    expect(
+      matteboxData({ mattebox: { programme: { type: 'demo/id' }, date: Number.NaN } }),
+    ).toEqual({});
+    expect(matteboxData({ mattebox: { programme: 'x', metadata: 3, addons: null } })).toEqual({});
+  });
+});
