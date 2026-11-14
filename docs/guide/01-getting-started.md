@@ -52,16 +52,13 @@ receiver.start(player);
 
 You can also write the player in the HTML, with its controls. Give it the
 receiver's handlers with `MatteboxPlayerElement.define({ handlers })` before
-it loads a source. From `@mattebox/player` 0.9.0, the call reaches a player
-that is already in the page. The app does this.
+it loads a source. The call reaches a player that is already in the page.
+The app does this.
 
 ```ts
 MatteboxPlayerElement.define({ handlers: receiver.handlers() });
 receiver.start(document.querySelector("mattebox-player"));
 ```
-
-With an older player, create the player in script: importing the package
-registers the element before `define` can run.
 
 Give the element the receiver's connectors too. With them, the player
 applies what a `@mattebox/player-cast` sender sends with the URL: the

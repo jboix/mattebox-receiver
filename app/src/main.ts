@@ -93,8 +93,8 @@ async function main(): Promise<void> {
   // wants a stage off names it in `without`.
   const receiver = createReceiver({ preset: full, resolve: resolver(player), debug });
   // The player is in the markup, with its controls. `define` gives it the
-  // receiver's chain: from player 0.9 the call reaches a player already in
-  // the page, as long as it has loaded nothing yet. The receiver's
+  // receiver's chain: the call reaches a player already in the page, as
+  // long as it has loaded nothing yet. The receiver's
   // connector makes a programme of what the sender sent, so the player
   // applies the sent markers, poster and chapters. A page with a content
   // API gives its own connectors to `createReceiver`, and resolves the
