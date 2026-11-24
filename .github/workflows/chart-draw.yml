@@ -1,0 +1,53 @@
+name: Draw charts
+
+# Dependabot changes only the manifest and the lockfile. A new version of a
+# build tool moves the built files by a few bytes, so the committed size
+# charts go stale and the Quality workflow fails on them.
+#
+# This workflow draws the charts on Dependabot's branch and keeps them as an
+# artifact. It runs the updated dependencies, so it holds no secret and cannot
+# push. The Commit charts workflow takes the artifact from here and commits it.
+on:
+  push:
+    branches:
+      - 'dependabot/npm_and_yarn/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  draw:
+    # Only Dependabot's own pushes. The regen bot's commit lands on the same
+    # branch, and its charts are current by construction.
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+      - name: Install dependencies
+        env:
+          HUSKY: '0'
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Draw the charts
+        run: npm run size-chart
+      # Every chart, changed or not: the commit job compares them itself.
+      - name: Keep the charts
+        uses: actions/upload-artifact@v7
+        with:
+          name: charts
+          path: docs/*-chart-*.svg
+          if-no-files-found: error
+          retention-days: 1
